@@ -14,13 +14,6 @@ defmodule SharedAssigns.TestEndpoint do
   ]
 
   plug(Plug.Session, @session_options)
-
-  def config(:live_view),
-    do: [
-      signing_salt: "very_secret_salt_for_testing_only_12345678"
-    ]
-
-  def config(_), do: nil
 end
 
 # Configure the app for testing
