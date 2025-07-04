@@ -65,7 +65,7 @@ defmodule SharedAssigns.Consumer do
   @doc """
   Updates context values in component if versions have changed.
   """
-  def maybe_update_contexts(socket, assigns, keys) do
+  def maybe_update_contexts(socket, _assigns, keys) do
     current_versions = socket.assigns[:__consumer_context_versions__] || %{}
     parent_versions = get_versions_from_parent(socket, keys)
 
