@@ -1,86 +1,82 @@
 defmodule SharedAssignsDemoWeb.UserCardComponent do
   use Phoenix.LiveComponent
   import SharedAssignsDemoWeb.CoreComponents
-  use SharedAssigns.Consumer, keys: [:theme, :user_role]
+  use SharedAssigns.Consumer, contexts: []
 
-  attr :user_name, :string, required: true
-  attr :user_role, :string, required: true
-  attr :user_initials, :string, required: true
-  attr :color, :string, default: "blue"
-  attr :status, :string, default: "online"
-  attr :context_type, :string, required: true
+  def update(%{subscribed_contexts: contexts} = assigns, socket) do
+    # Dynamically set the subscribed contexts based on the prop
+    socket =
+      socket
+      |> Phoenix.Component.assign(:subscribed_contexts, contexts)
+      |> Phoenix.Component.assign(assigns)
+
+    # Extract parent contexts manually since we're overriding update/2
+    parent_contexts = Map.get(assigns, :__parent_contexts__, %{})
+
+    # Inject only the contexts this component subscribes to
+    context_assigns =
+      contexts
+      |> Enum.reduce(%{}, fn context_key, acc ->
+        case Map.get(parent_contexts, context_key) do
+          nil -> acc
+          value -> Map.put(acc, context_key, value)
+        end
+      end)
+
+    socket = Phoenix.Component.assign(socket, context_assigns)
+
+    {:ok, socket}
+  end
 
   def render(assigns) do
     ~H"""
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-      <div class="flex items-center space-x-4">
-        <div class={[
-          "w-12 h-12 rounded-full flex items-center justify-center",
-          case @color do
-            "blue" -> "bg-blue-500"
-            "green" -> "bg-green-500"
-            "purple" -> "bg-purple-500"
-            "red" -> "bg-red-500"
-            _ -> "bg-gray-500"
-          end
-        ]}>
-          <span class="text-white font-semibold">{@user_initials}</span>
-        </div>
-        <div>
-          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">{@user_name}</h3>
-          <p class="text-sm text-gray-600 dark:text-gray-400">{@user_role}</p>
-        </div>
+    <div class="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-semibold text-gray-900">{@user_name}</h3>
+        <span class="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
+          {length(@subscribed_contexts)} contexts
+        </span>
       </div>
 
-      <div class="mt-4 space-y-2">
-        <p class="text-sm text-gray-700 dark:text-gray-300">
-          This component consumes {@context_type} context
-        </p>
-        <div class="flex space-x-2">
-          <span class={[
-            "px-2 py-1 text-xs rounded",
-            case @status do
-              "online" -> "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-              "away" -> "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
-              "offline" -> "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
-              _ -> "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
-            end
-          ]}>
-            {String.capitalize(@status)}
-          </span>
+      <div class="space-y-2 text-sm">
+        <%= if :theme in @subscribed_contexts do %>
+          <div class="flex items-center space-x-2">
+            <.icon name="hero-paint-brush" class="w-4 h-4 text-blue-500" />
+            <span class="text-gray-600">Theme:</span>
+            <span class="font-medium">{Map.get(assigns, :theme, "N/A")}</span>
+          </div>
+        <% end %>
 
-          <%= if @context_type == "theme" do %>
-            <span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 rounded">
-              Theme: {String.capitalize(@theme || "light")}
-            </span>
-          <% end %>
+        <%= if :user_role in @subscribed_contexts do %>
+          <div class="flex items-center space-x-2">
+            <.icon name="hero-user" class="w-4 h-4 text-green-500" />
+            <span class="text-gray-600">Role:</span>
+            <span class="font-medium capitalize">{Map.get(assigns, :user_role, "N/A")}</span>
+          </div>
+        <% end %>
 
-          <%= if @context_type == "user_role" do %>
-            <span class="px-2 py-1 text-xs bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 rounded">
-              Role: {String.capitalize(@user_role || "guest")}
-            </span>
+        <%= if @subscribed_contexts == [] do %>
+          <div class="flex items-center space-x-2 text-gray-400">
+            <.icon name="hero-minus-circle" class="w-4 h-4" />
+            <span class="italic">No context subscriptions</span>
+          </div>
+        <% end %>
+      </div>
+
+      <div class="mt-3 pt-3 border-t border-gray-100">
+        <div class="text-xs text-gray-500">
+          Subscribed to:
+          <%= if @subscribed_contexts == [] do %>
+            <span class="italic">none</span>
+          <% else %>
+            {Enum.join(@subscribed_contexts, ", ")}
           <% end %>
         </div>
-        
-    <!-- Re-render counter to show granular updates -->
-        <div class="mt-3 p-2 bg-gray-50 dark:bg-gray-700 rounded text-xs">
-          <p class="text-gray-600 dark:text-gray-400">
-            Last updated: {DateTime.utc_now() |> DateTime.to_string() |> String.slice(11, 8)}
-          </p>
-          <p class="text-gray-600 dark:text-gray-400">
-            Watching: {@context_type} context
-          </p>
+        <div class="text-xs text-gray-400 mt-1">
+          Re-renders only when subscribed contexts change
         </div>
       </div>
     </div>
     """
-  end
-
-  def mount(socket) do
-    {:ok, socket}
-  end
-
-  def update(assigns, socket) do
-    {:ok, assign(socket, assigns)}
   end
 end
