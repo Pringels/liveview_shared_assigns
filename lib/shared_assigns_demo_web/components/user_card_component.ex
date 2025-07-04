@@ -1,5 +1,6 @@
 defmodule SharedAssignsDemoWeb.UserCardComponent do
   use Phoenix.LiveComponent
+  import SharedAssignsDemoWeb.CoreComponents
   use SharedAssigns.Consumer, keys: [:theme, :user_role]
 
   attr :user_name, :string, required: true
