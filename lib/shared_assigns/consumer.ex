@@ -65,7 +65,7 @@ defmodule SharedAssigns.Consumer do
   @doc """
   Updates context values in component if versions have changed.
   """
-  def maybe_update_contexts(socket, _assigns, keys) do
+  def maybe_update_contexts(socket, assigns, keys) do
     current_versions = socket.assigns[:__consumer_context_versions__] || %{}
     parent_versions = get_versions_from_parent(socket, keys)
 
@@ -88,15 +88,17 @@ defmodule SharedAssigns.Consumer do
   end
 
   defp get_contexts_from_parent(socket, keys) do
-    # Try to get contexts from parent LiveView via assigns or private
-    parent_contexts =
-      case socket.assigns[:__shared_assigns_versions__] do
-        nil ->
-          %{}
+    # Get the parent LiveView process and extract contexts
+    parent_pid = socket.parent_pid || self()
 
-        _versions ->
-          # We're in a LiveView context, get from private
-          socket.private[:__shared_assigns_contexts__] || %{}
+    parent_contexts =
+      case Process.get({:shared_assigns_contexts, parent_pid}) do
+        nil ->
+          # Try to get from the current process if we're in the LiveView
+          Process.get(:shared_assigns_contexts) || %{}
+
+        contexts ->
+          contexts
       end
 
     # Build context assigns map
@@ -109,7 +111,18 @@ defmodule SharedAssigns.Consumer do
   end
 
   defp get_versions_from_parent(socket, keys) do
-    parent_versions = socket.assigns[:__shared_assigns_versions__] || %{}
+    # Get the parent LiveView process and extract versions
+    parent_pid = socket.parent_pid || self()
+
+    parent_versions =
+      case Process.get({:shared_assigns_versions, parent_pid}) do
+        nil ->
+          # Try to get from the current process if we're in the LiveView
+          Process.get(:shared_assigns_versions) || %{}
+
+        versions ->
+          versions
+      end
 
     # Build versions map for our keys
     Enum.reduce(keys, %{}, fn key, acc ->
