@@ -3,9 +3,12 @@ defmodule SharedAssigns.PubSubTest do
   import Phoenix.LiveViewTest
 
   defmodule TestPubSub do
-    @behaviour Phoenix.PubSub
+    use GenServer
 
-    def start_link(_opts), do: GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
+    def start_link(opts) do
+      GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
+    end
+
     def init(state), do: {:ok, state}
 
     def subscribe(pubsub, topic) when pubsub == __MODULE__ do
@@ -32,11 +35,11 @@ defmodule SharedAssigns.PubSubTest do
       broadcast(pubsub, topic, message)
     end
 
-    def direct_broadcast(node, pubsub, topic, message) when pubsub == __MODULE__ do
+    def direct_broadcast(_node, pubsub, topic, message) when pubsub == __MODULE__ do
       broadcast(pubsub, topic, message)
     end
 
-    def direct_broadcast!(node, pubsub, topic, message) when pubsub == __MODULE__ do
+    def direct_broadcast!(_node, pubsub, topic, message) when pubsub == __MODULE__ do
       broadcast(pubsub, topic, message)
     end
   end
