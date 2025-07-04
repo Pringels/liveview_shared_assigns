@@ -62,14 +62,15 @@ defmodule SharedAssigns.Provider do
       end
 
       @doc """
+      Returns the initial contexts configuration for this provider.
+      """
+      def __shared_assigns_contexts__ do
+        @shared_assigns_contexts
+      end
+
+      @doc """
       Returns all available context keys for this provider.
       """
-      @doc """\
-      Returns the initial contexts configuration for this provider.\
-      """\
-      def __shared_assigns_contexts__ do\
-        @shared_assigns_contexts\
-      end
       def context_keys do
         Keyword.keys(@shared_assigns_contexts)
       end
