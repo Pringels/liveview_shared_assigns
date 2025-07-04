@@ -15,12 +15,6 @@ defmodule SharedAssigns.TestEndpoint do
 
   plug(Plug.Session, @session_options)
   plug(Phoenix.LiveView.Flash)
-
-  def config(which)
-  def config(:live_view), do: [signing_salt: "test_salt"]
-  def config(_), do: nil
-
-  defoverridable config: 1
 end
 
 # Start the test endpoint
