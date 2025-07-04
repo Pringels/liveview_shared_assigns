@@ -1,101 +1,106 @@
 defmodule SharedAssigns do
   @moduledoc """
-  SharedAssigns provides a React Context-like API for Phoenix LiveView to eliminate prop drilling.
+  SharedAssigns provides a React Context-like system for Phoenix LiveView
+  to eliminate prop drilling by allowing components to subscribe to specific
+  context values and automatically re-render when those contexts change.
 
-  ## Core Concepts
+  ## Usage
 
-  - **Provider**: A LiveView that declares initial context using `use SharedAssigns.Provider`
-  - **Consumer**: Components that declare needed context keys using `use SharedAssigns.Consumer`
-  - **Reactivity**: Granular re-renders using version tracking in assigns
+  ### In a LiveView (Provider)
+  ```elixir
+  defmodule MyAppWeb.PageLive do
+    use MyAppWeb, :live_view
+    use SharedAssigns.Provider, contexts: [theme: "light", user_role: "guest"]
+    
+    def handle_event("toggle_theme", _params, socket) do
+      new_theme = if get_context(socket, :theme) == "light", do: "dark", else: "light"
+      {:noreply, put_context(socket, :theme, new_theme)}
+    end
+  end
+  ```
 
-  ## Example
-
-      # Provider LiveView
-      defmodule MyAppWeb.PageLive do
-        use MyAppWeb, :live_view
-        use SharedAssigns.Provider,
-          contexts: [
-            theme: "light",
-            user_role: "guest"
-          ]
-
-        def handle_event("toggle_theme", _, socket) do
-          new_theme = if SharedAssigns.get(socket, :theme) == "light", do: "dark", else: "light"
-          socket = SharedAssigns.put(socket, :theme, new_theme)
-          {:noreply, socket}
-        end
-      end
-
-      # Consumer Component
-      defmodule MyAppWeb.HeaderComponent do
-        use Phoenix.LiveComponent
-        use SharedAssigns.Consumer, keys: [:theme]
-
-        def render(assigns) do
-          ~H\"""
-          <header class={"theme-\#{@theme}"}>
-            <h1>My App</h1>
-          </header>
-          \"""
-        end
-      end
+  ### In a LiveComponent (Consumer)
+  ```elixir
+  defmodule MyAppWeb.HeaderComponent do
+    use MyAppWeb, :live_component
+    use SharedAssigns.Consumer, contexts: [:theme]
+    
+    # @theme will be automatically available in assigns
+  end
+  ```
   """
+
+  import Phoenix.Component, only: [assign: 3]
+
+  @doc """
+  Initializes the SharedAssigns context storage in a LiveView socket.
+  This is typically called automatically by the Provider macro.
+  """
+  def initialize_contexts(socket, initial_contexts \\ []) do
+    contexts = Enum.into(initial_contexts, %{})
+    versions = contexts |> Enum.map(fn {key, _value} -> {key, 1} end) |> Enum.into(%{})
+
+    socket
+    |> assign(:__shared_assigns_contexts__, contexts)
+    |> assign(:__shared_assigns_versions__, versions)
+  end
+
+  @doc """
+  Sets a context value and increments its version for reactivity tracking.
+  """
+  def put_context(socket, key, value) do
+    contexts = Map.put(socket.assigns.__shared_assigns_contexts__, key, value)
+
+    current_version = Map.get(socket.assigns.__shared_assigns_versions__, key, 0)
+    versions = Map.put(socket.assigns.__shared_assigns_versions__, key, current_version + 1)
+
+    socket
+    |> assign(:__shared_assigns_contexts__, contexts)
+    |> assign(:__shared_assigns_versions__, versions)
+  end
+
+  @doc """
+  Updates a context value using a function and increments its version.
+  """
+  def update_context(socket, key, fun) do
+    current_value = Map.get(socket.assigns.__shared_assigns_contexts__, key)
+    new_value = fun.(current_value)
+    put_context(socket, key, new_value)
+  end
 
   @doc """
   Gets a context value from the socket.
-
-  ## Examples
-
-      theme = SharedAssigns.get(socket, :theme)
-      user_role = SharedAssigns.get(socket, :user_role, "guest")
   """
-  def get(socket, key, default \\ nil) do
-    contexts = socket.private[:__shared_assigns_contexts__] || %{}
-    Map.get(contexts, key, default)
+  def get_context(socket, key) do
+    Map.get(socket.assigns.__shared_assigns_contexts__, key)
   end
 
   @doc """
-  Puts a context value into the socket, updating both the private context storage
-  and the version tracking in assigns to trigger reactivity.
-
-  ## Examples
-
-      socket = SharedAssigns.put(socket, :theme, "dark")
-      socket = SharedAssigns.put(socket, :user_role, "admin")
+  Gets the current version of a context for reactivity tracking.
   """
-  def put(socket, key, value) do
-    contexts = socket.private[:__shared_assigns_contexts__] || %{}
-    versions = socket.assigns[:__shared_assigns_versions__] || %{}
-
-    new_contexts = Map.put(contexts, key, value)
-    new_versions = Map.put(versions, key, (versions[key] || 0) + 1)
-
-    socket
-    |> Phoenix.LiveView.put_private(:__shared_assigns_contexts__, new_contexts)
-    |> Phoenix.Component.assign(:__shared_assigns_versions__, new_versions)
+  def get_context_version(socket, key) do
+    Map.get(socket.assigns.__shared_assigns_versions__, key, 0)
   end
 
   @doc """
-  Updates a context value using the given function, similar to `Map.update/4`.
-
-  ## Examples
-
-      socket = SharedAssigns.update(socket, :notifications, [], &([new_msg | &1]))
-      socket = SharedAssigns.update(socket, :count, 0, &(&1 + 1))
+  Checks if any of the given context keys have been updated since the last check.
+  This is used internally by Consumer components to determine if they need to re-render.
   """
-  def update(socket, key, default, fun) when is_function(fun, 1) do
-    current_value = get(socket, key, default)
-    new_value = fun.(current_value)
-    put(socket, key, new_value)
+  def contexts_changed?(socket, context_keys, last_versions \\ %{}) do
+    Enum.any?(context_keys, fn key ->
+      current_version = get_context_version(socket, key)
+      last_version = Map.get(last_versions, key, 0)
+      current_version > last_version
+    end)
   end
 
-  @doc false
-  def initialize_contexts(socket, contexts) do
-    initial_contexts = Map.new(contexts)
-    initial_versions = Map.new(contexts, fn {key, _value} -> {key, 1} end)
-
-    socket
-    |> Phoenix.LiveView.put_private(:__shared_assigns_contexts__, initial_contexts)
-    |> Phoenix.Component.assign(:__shared_assigns_versions__, initial_versions)
+  @doc """
+  Extracts context values for the given keys into a map.
+  Used by Consumer components to inject context values into their assigns.
+  """
+  def extract_contexts(socket, context_keys) do
+    context_keys
+    |> Enum.map(fn key -> {key, get_context(socket, key)} end)
+    |> Enum.into(%{})
   end
 end
