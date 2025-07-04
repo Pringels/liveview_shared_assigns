@@ -28,12 +28,6 @@ defmodule SharedAssigns do
     # @theme will be automatically available in assigns
   end
   ```
-
-  ## Context Management
-
-  Contexts are stored in the LiveView socket and tracked with version numbers
-  to enable granular reactivity. Only components that subscribe to changed
-  contexts will re-render.
   """
 
   import Phoenix.Component, only: [assign: 3]
@@ -41,13 +35,6 @@ defmodule SharedAssigns do
   @doc """
   Initializes the SharedAssigns context storage in a LiveView socket.
   This is typically called automatically by the Provider macro.
-
-  ## Examples
-
-      def mount(_params, _session, socket) do
-        socket = SharedAssigns.initialize_contexts(socket, theme: "light", user_role: "guest")
-        {:ok, socket}
-      end
   """
   def initialize_contexts(socket, initial_contexts \\ []) do
     contexts = Enum.into(initial_contexts, %{})
@@ -60,10 +47,6 @@ defmodule SharedAssigns do
 
   @doc """
   Sets a context value and increments its version for reactivity tracking.
-
-  ## Examples
-
-      socket = SharedAssigns.put_context(socket, :theme, "dark")
   """
   def put_context(socket, key, value) do
     contexts = Map.put(socket.assigns.__shared_assigns_contexts__, key, value)
@@ -78,10 +61,6 @@ defmodule SharedAssigns do
 
   @doc """
   Updates a context value using a function and increments its version.
-
-  ## Examples
-
-      socket = SharedAssigns.update_context(socket, :count, &(&1 + 1))
   """
   def update_context(socket, key, fun) do
     current_value = Map.get(socket.assigns.__shared_assigns_contexts__, key)
@@ -91,10 +70,6 @@ defmodule SharedAssigns do
 
   @doc """
   Gets a context value from the socket.
-
-  ## Examples
-
-      theme = SharedAssigns.get_context(socket, :theme)
   """
   def get_context(socket, key) do
     Map.get(socket.assigns.__shared_assigns_contexts__, key)
@@ -102,10 +77,6 @@ defmodule SharedAssigns do
 
   @doc """
   Gets the current version of a context for reactivity tracking.
-
-  ## Examples
-
-      version = SharedAssigns.get_context_version(socket, :theme)
   """
   def get_context_version(socket, key) do
     Map.get(socket.assigns.__shared_assigns_versions__, key, 0)
@@ -114,10 +85,6 @@ defmodule SharedAssigns do
   @doc """
   Checks if any of the given context keys have been updated since the last check.
   This is used internally by Consumer components to determine if they need to re-render.
-
-  ## Examples
-
-      changed? = SharedAssigns.contexts_changed?(socket, [:theme, :user_role], last_versions)
   """
   def contexts_changed?(socket, context_keys, last_versions \\ %{}) do
     Enum.any?(context_keys, fn key ->
@@ -130,11 +97,6 @@ defmodule SharedAssigns do
   @doc """
   Extracts context values for the given keys into a map.
   Used by Consumer components to inject context values into their assigns.
-
-  ## Examples
-
-      contexts = SharedAssigns.extract_contexts(socket, [:theme, :user_role])
-      # Returns: %{theme: "dark", user_role: "admin"}
   """
   def extract_contexts(socket, context_keys) do
     context_keys
