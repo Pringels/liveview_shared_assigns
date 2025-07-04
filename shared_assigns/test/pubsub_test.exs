@@ -3,16 +3,16 @@ defmodule SharedAssigns.PubSubTest do
 
   describe "PubSubProvider module compilation" do
     test "defines the expected macros and functions" do
-      # Test that the module compiles and exports expected functions
-      assert function_exported?(SharedAssigns.PubSubProvider, :__using__, 1)
+      # Test that the module compiles and exports expected macros and functions
+      assert macro_exported?(SharedAssigns.PubSubProvider, :__using__, 1)
       assert function_exported?(SharedAssigns.PubSubProvider, :broadcast_context_change, 4)
     end
   end
 
   describe "PubSubConsumer module compilation" do
     test "defines the expected macros and functions" do
-      # Test that the module compiles and exports expected functions
-      assert function_exported?(SharedAssigns.PubSubConsumer, :__using__, 1)
+      # Test that the module compiles and exports expected macros
+      assert macro_exported?(SharedAssigns.PubSubConsumer, :__using__, 1)
     end
   end
 
