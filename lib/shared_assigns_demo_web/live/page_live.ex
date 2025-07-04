@@ -26,7 +26,7 @@ defmodule SharedAssignsDemoWeb.PageLive do
   end
 
   def handle_event("toggle_theme", _params, socket) do
-    current_theme = SharedAssigns.get_context(socket, :theme)
+    current_theme = SharedAssigns.get_context(socket, :theme) || "light"
     new_theme = if current_theme == "light", do: "dark", else: "light"
 
     socket = SharedAssigns.put_context(socket, :theme, new_theme)
