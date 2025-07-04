@@ -14,7 +14,23 @@ defmodule SharedAssigns.TestEndpoint do
   ]
 
   plug(Plug.Session, @session_options)
+
+  def config(:live_view),
+    do: [
+      signing_salt: "very_secret_salt_for_testing_only_12345678"
+    ]
+
+  def config(_), do: nil
 end
+
+# Configure the app for testing
+Application.put_env(:shared_assigns, SharedAssigns.TestEndpoint,
+  http: [port: 4001],
+  secret_key_base: String.duplicate("a", 64),
+  live_view: [
+    signing_salt: "very_secret_salt_for_testing_only_12345678"
+  ]
+)
 
 # Start the test endpoint
 {:ok, _} = SharedAssigns.TestEndpoint.start_link()
