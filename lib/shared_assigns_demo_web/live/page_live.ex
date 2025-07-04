@@ -26,10 +26,10 @@ defmodule SharedAssignsDemoWeb.PageLive do
   end
 
   def handle_event("toggle_theme", _params, socket) do
-    current_theme = SharedAssigns.get(socket, :theme, "light")
+    current_theme = SharedAssigns.get_context(socket, :theme)
     new_theme = if current_theme == "light", do: "dark", else: "light"
 
-    socket = SharedAssigns.put(socket, :theme, new_theme)
+    socket = SharedAssigns.put_context(socket, :theme, new_theme)
 
     socket =
       Phoenix.Component.assign(
@@ -42,7 +42,7 @@ defmodule SharedAssignsDemoWeb.PageLive do
   end
 
   def handle_event("change_role", %{"role" => role}, socket) do
-    socket = SharedAssigns.put(socket, :user_role, role)
+    socket = SharedAssigns.put_context(socket, :user_role, role)
 
     socket =
       Phoenix.Component.assign(
