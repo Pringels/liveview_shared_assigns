@@ -14,7 +14,6 @@ defmodule SharedAssigns.TestEndpoint do
   ]
 
   plug(Plug.Session, @session_options)
-  plug(Phoenix.LiveView.Flash)
 end
 
 # Start the test endpoint
