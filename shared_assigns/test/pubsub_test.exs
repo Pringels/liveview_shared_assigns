@@ -88,7 +88,7 @@ defmodule SharedAssigns.PubSubTest do
     end
   end
 
-  @endpoint SharedAssignsDemoWeb.Endpoint
+  @endpoint SharedAssigns.TestEndpoint
 
   setup do
     start_supervised!({Registry, keys: :duplicate, name: TestPubSub.Registry})
