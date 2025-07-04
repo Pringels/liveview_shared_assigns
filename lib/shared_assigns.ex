@@ -72,7 +72,7 @@ defmodule SharedAssigns do
 
     socket
     |> Phoenix.LiveView.put_private(:__shared_assigns_contexts__, new_contexts)
-    |> Phoenix.LiveView.assign(:__shared_assigns_versions__, new_versions)
+    |> Phoenix.Component.assign(:__shared_assigns_versions__, new_versions)
   end
 
   @doc """
@@ -96,6 +96,6 @@ defmodule SharedAssigns do
 
     socket
     |> Phoenix.LiveView.put_private(:__shared_assigns_contexts__, initial_contexts)
-    |> Phoenix.LiveView.assign(:__shared_assigns_versions__, initial_versions)
+    |> Phoenix.Component.assign(:__shared_assigns_versions__, initial_versions)
   end
 end
