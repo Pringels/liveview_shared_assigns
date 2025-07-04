@@ -33,7 +33,7 @@ defmodule SharedAssigns.Provider do
 
       def mount(params, session, socket) do
         socket = SharedAssigns.initialize_contexts(socket, @shared_assigns_contexts)
-        super(params, session, socket)
+        {:ok, socket}
       end
 
       defoverridable mount: 3
