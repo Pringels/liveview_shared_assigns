@@ -18,6 +18,7 @@ defmodule SharedAssignsDemoWeb.Router do
     pipe_through :browser
 
     live "/", PageLive, :index
+    live "/child", ChildLive
   end
 
   # Other scopes may use custom stacks.
