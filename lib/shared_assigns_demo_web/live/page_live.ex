@@ -4,64 +4,60 @@ defmodule SharedAssignsDemoWeb.PageLive do
   use SharedAssigns.Provider,
     contexts: [
       theme: "light",
-      user_role: "guest",
-      notifications: []
+      user_role: "guest"
     ]
 
   def mount(_params, _session, socket) do
+    # Initialize SharedAssigns contexts
+    socket =
+      SharedAssigns.initialize_contexts(socket,
+        theme: "light",
+        user_role: "guest"
+      )
+
+    # Also assign contexts to socket assigns for template access
+    socket =
+      Phoenix.Component.assign(socket, :contexts, %{
+        theme: "light",
+        user_role: "guest"
+      })
+
     {:ok, socket}
   end
 
   def handle_event("toggle_theme", _params, socket) do
-    current_theme = get_context(socket, :theme)
+    current_theme = SharedAssigns.get(socket, :theme, "light")
     new_theme = if current_theme == "light", do: "dark", else: "light"
-    socket = put_context(socket, :theme, new_theme)
-    {:noreply, socket}
-  end
 
-  def handle_event("switch_role", _params, socket) do
-    current_role = get_context(socket, :user_role)
-
-    new_role =
-      case current_role do
-        "guest" -> "user"
-        "user" -> "admin"
-        "admin" -> "guest"
-        _ -> "guest"
-      end
-
-    socket = put_context(socket, :user_role, new_role)
-    {:noreply, socket}
-  end
-
-  def handle_event("add_notification", %{"message" => message}, socket) do
-    new_notification = %{
-      id: System.unique_integer([:positive]),
-      message: message,
-      timestamp: DateTime.utc_now()
-    }
+    socket = SharedAssigns.put(socket, :theme, new_theme)
 
     socket =
-      update_context(socket, :notifications, [], fn notifications ->
-        [new_notification | notifications]
-      end)
+      Phoenix.Component.assign(
+        socket,
+        :contexts,
+        Map.put(socket.assigns.contexts, :theme, new_theme)
+      )
 
     {:noreply, socket}
   end
 
-  def handle_event("clear_notifications", _params, socket) do
-    socket = put_context(socket, :notifications, [])
+  def handle_event("change_role", %{"role" => role}, socket) do
+    socket = SharedAssigns.put(socket, :user_role, role)
+
+    socket =
+      Phoenix.Component.assign(
+        socket,
+        :contexts,
+        Map.put(socket.assigns.contexts, :user_role, role)
+      )
+
     {:noreply, socket}
   end
 
   def render(assigns) do
-    # Extract contexts and assign them to socket for template access
-    contexts = assigns.socket.private[:__shared_assigns_contexts__] || %{}
-    assigns = Phoenix.Component.assign(assigns, :contexts, contexts)
-
     ~H"""
-    <Layouts.app flash={@flash}>
-      <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
+    <SharedAssignsDemoWeb.Layouts.app flash={@flash}>
+      <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <!-- Header Component -->
         <.live_component
           module={SharedAssignsDemoWeb.HeaderComponent}
@@ -84,60 +80,99 @@ defmodule SharedAssignsDemoWeb.PageLive do
             
     <!-- Main Content -->
             <div class="lg:col-span-3">
-              <!-- User Cards showing granular re-renders -->
-              <div class="mb-8">
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                  SharedAssigns Library Demo
-                </h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <.live_component
-                    module={SharedAssignsDemoWeb.UserCardComponent}
-                    id="user-card-1"
-                    user_name="John Doe"
-                    user_role="Product Manager"
-                    user_initials="JD"
-                    color="blue"
-                    status="online"
-                    context_type="theme"
-                    __parent_contexts__={@contexts}
-                    __shared_assigns_versions__={@__shared_assigns_versions__}
-                  />
+              <div class="bg-white rounded-xl shadow-lg p-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-6">SharedAssigns Demo</h1>
 
-                  <.live_component
-                    module={SharedAssignsDemoWeb.UserCardComponent}
-                    id="user-card-2"
-                    user_name="Jane Smith"
-                    user_role="Designer"
-                    user_initials="JS"
-                    color="green"
-                    status="away"
-                    context_type="user_role"
-                    __parent_contexts__={@contexts}
-                    __shared_assigns_versions__={@__shared_assigns_versions__}
-                  />
-                </div>
-              </div>
-              
-    <!-- Features explanation -->
-              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-700">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                  SharedAssigns Features
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div class="space-y-3">
-                    <div class="flex items-start space-x-3">
-                      <div class="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <.icon name="hero-check" class="w-3 h-3 text-white" />
-                      </div>
-                      <div>
-                        <p class="text-sm font-medium text-gray-900 dark:text-white">
-                          Zero Prop Drilling
-                        </p>
-                        <p class="text-xs text-gray-600 dark:text-gray-400">
-                          Access context from any component
-                        </p>
-                      </div>
+                <div class="space-y-6">
+                  <div>
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Theme Controls</h2>
+                    <button
+                      phx-click="toggle_theme"
+                      class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Toggle Theme (Current: {@contexts.theme})
+                    </button>
+                  </div>
+
+                  <div>
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">User Role Controls</h2>
+                    <div class="flex gap-3">
+                      <button
+                        phx-click="change_role"
+                        phx-value-role="guest"
+                        class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+                      >
+                        Guest
+                      </button>
+                      <button
+                        phx-click="change_role"
+                        phx-value-role="user"
+                        class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+                      >
+                        User
+                      </button>
+                      <button
+                        phx-click="change_role"
+                        phx-value-role="admin"
+                        class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+                      >
+                        Admin
+                      </button>
                     </div>
+                    <p class="mt-2 text-sm text-gray-600">
+                      Current role: <span class="font-semibold">{@contexts.user_role}</span>
+                    </p>
+                  </div>
+                  
+    <!-- User Cards showing granular re-renders -->
+                  <div>
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">
+                      User Cards (Granular Re-renders)
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <.live_component
+                        module={SharedAssignsDemoWeb.UserCardComponent}
+                        id="user-card-1"
+                        user_name="Alice Johnson"
+                        subscribed_contexts={[:theme]}
+                        __parent_contexts__={@contexts}
+                        __shared_assigns_versions__={@__shared_assigns_versions__}
+                      />
+                      <.live_component
+                        module={SharedAssignsDemoWeb.UserCardComponent}
+                        id="user-card-2"
+                        user_name="Bob Smith"
+                        subscribed_contexts={[:user_role]}
+                        __parent_contexts__={@contexts}
+                        __shared_assigns_versions__={@__shared_assigns_versions__}
+                      />
+                      <.live_component
+                        module={SharedAssignsDemoWeb.UserCardComponent}
+                        id="user-card-3"
+                        user_name="Carol Davis"
+                        subscribed_contexts={[:theme, :user_role]}
+                        __parent_contexts__={@contexts}
+                        __shared_assigns_versions__={@__shared_assigns_versions__}
+                      />
+                      <.live_component
+                        module={SharedAssignsDemoWeb.UserCardComponent}
+                        id="user-card-4"
+                        user_name="David Wilson"
+                        subscribed_contexts={[]}
+                        __parent_contexts__={@contexts}
+                        __shared_assigns_versions__={@__shared_assigns_versions__}
+                      />
+                    </div>
+                  </div>
+
+                  <div class="mt-8 p-4 bg-blue-50 rounded-lg">
+                    <h3 class="font-semibold text-blue-900 mb-2">How it works:</h3>
+                    <ul class="text-sm text-blue-800 space-y-1">
+                      <li>• Each component declares which contexts it needs</li>
+                      <li>• Only components using changed contexts re-render</li>
+                      <li>• No prop drilling - contexts are accessed directly</li>
+                      <li>• Version tracking ensures granular reactivity</li>
+                    </ul>
                   </div>
                 </div>
               </div>
@@ -145,7 +180,7 @@ defmodule SharedAssignsDemoWeb.PageLive do
           </div>
         </div>
       </div>
-    </Layouts.app>
+    </SharedAssignsDemoWeb.Layouts.app>
     """
   end
 end
