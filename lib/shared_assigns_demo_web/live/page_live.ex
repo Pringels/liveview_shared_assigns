@@ -1,11 +1,12 @@
 defmodule SharedAssignsDemoWeb.PageLive do
   use SharedAssignsDemoWeb, :live_view
 
-  use SharedAssigns.Provider,
+  use SharedAssigns.PubSubProvider,
     contexts: [
       theme: "light",
       user_role: "guest"
-    ]
+    ],
+    pubsub: SharedAssignsDemo.PubSub
 
   def mount(_params, _session, socket) do
     # Initialize SharedAssigns contexts
@@ -29,7 +30,7 @@ defmodule SharedAssignsDemoWeb.PageLive do
     current_theme = SharedAssigns.get_context(socket, :theme) || "light"
     new_theme = if current_theme == "light", do: "dark", else: "light"
 
-    socket = SharedAssigns.put_context(socket, :theme, new_theme)
+    socket = put_context(socket, :theme, new_theme)
 
     socket =
       Phoenix.Component.assign(
@@ -42,7 +43,7 @@ defmodule SharedAssignsDemoWeb.PageLive do
   end
 
   def handle_event("change_role", %{"role" => role}, socket) do
-    socket = SharedAssigns.put_context(socket, :user_role, role)
+    socket = put_context(socket, :user_role, role)
 
     socket =
       Phoenix.Component.assign(
@@ -164,6 +165,25 @@ defmodule SharedAssignsDemoWeb.PageLive do
                       />
                     </div>
                   </div>
+                  
+    <!-- Link to Child LiveView -->
+                  <div class="mt-8 p-6 bg-purple-50 rounded-lg border border-purple-200">
+                    <h3 class="text-lg font-semibold text-purple-900 mb-2">
+                      🚀 NEW: Nested LiveView Support
+                    </h3>
+                    <p class="text-purple-800 mb-4">
+                      SharedAssigns now supports context sharing across separate LiveView processes using PubSub!
+                    </p>
+                    <.link
+                      navigate={~p"/child"}
+                      class="inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                      View Child LiveView Demo →
+                    </.link>
+                    <p class="mt-2 text-sm text-purple-700">
+                      The child LiveView will automatically receive context updates from this parent!
+                    </p>
+                  </div>
 
                   <div class="mt-8 p-4 bg-blue-50 rounded-lg">
                     <h3 class="font-semibold text-blue-900 mb-2">How it works:</h3>
@@ -172,6 +192,7 @@ defmodule SharedAssignsDemoWeb.PageLive do
                       <li>• Only components using changed contexts re-render</li>
                       <li>• No prop drilling - contexts are accessed directly</li>
                       <li>• Version tracking ensures granular reactivity</li>
+                      <li>• <strong>NEW:</strong> PubSub enables cross-LiveView context sharing</li>
                     </ul>
                   </div>
                 </div>
