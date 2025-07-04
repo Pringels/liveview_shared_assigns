@@ -55,8 +55,9 @@ defmodule SharedAssignsDemoWeb.PageLive do
   end
 
   def render(assigns) do
-    # Extract contexts for components
+    # Extract contexts and assign them to socket for template access
     contexts = assigns.socket.private[:__shared_assigns_contexts__] || %{}
+    assigns = Phoenix.Component.assign(assigns, :contexts, contexts)
 
     ~H"""
     <Layouts.app flash={@flash}>
@@ -65,7 +66,7 @@ defmodule SharedAssignsDemoWeb.PageLive do
         <.live_component
           module={SharedAssignsDemoWeb.HeaderComponent}
           id="header"
-          __parent_contexts__={contexts}
+          __parent_contexts__={@contexts}
           __shared_assigns_versions__={@__shared_assigns_versions__}
         />
 
@@ -76,7 +77,7 @@ defmodule SharedAssignsDemoWeb.PageLive do
               <.live_component
                 module={SharedAssignsDemoWeb.SidebarComponent}
                 id="sidebar"
-                __parent_contexts__={contexts}
+                __parent_contexts__={@contexts}
                 __shared_assigns_versions__={@__shared_assigns_versions__}
               />
             </div>
@@ -98,7 +99,7 @@ defmodule SharedAssignsDemoWeb.PageLive do
                     color="blue"
                     status="online"
                     context_type="theme"
-                    __parent_contexts__={contexts}
+                    __parent_contexts__={@contexts}
                     __shared_assigns_versions__={@__shared_assigns_versions__}
                   />
 
@@ -111,7 +112,7 @@ defmodule SharedAssignsDemoWeb.PageLive do
                     color="green"
                     status="away"
                     context_type="user_role"
-                    __parent_contexts__={contexts}
+                    __parent_contexts__={@contexts}
                     __shared_assigns_versions__={@__shared_assigns_versions__}
                   />
                 </div>
