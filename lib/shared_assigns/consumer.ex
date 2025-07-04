@@ -30,20 +30,15 @@ defmodule SharedAssigns.Consumer do
       @shared_assigns_consumer_keys unquote(keys)
 
       def mount(socket) do
-        socket = SharedAssigns.Consumer.inject_contexts(socket, @shared_assigns_consumer_keys)
         {:ok, socket}
       end
 
       def update(assigns, socket) do
-        # Check if any of our context versions have changed
+        # Inject contexts from the parent socket
         socket =
-          SharedAssigns.Consumer.maybe_update_contexts(
-            socket,
-            assigns,
-            @shared_assigns_consumer_keys
-          )
+          SharedAssigns.Consumer.inject_contexts(socket, assigns, @shared_assigns_consumer_keys)
 
-        {:ok, assign(socket, assigns)}
+        {:ok, Phoenix.Component.assign(socket, assigns)}
       end
 
       defoverridable mount: 1, update: 2
@@ -51,85 +46,33 @@ defmodule SharedAssigns.Consumer do
   end
 
   @doc """
-  Injects context values into component assigns during mount.
+  Injects context values into component assigns from the parent socket.
   """
-  def inject_contexts(socket, keys) do
-    contexts = get_contexts_from_parent(socket, keys)
-    versions = get_versions_from_parent(socket, keys)
+  def inject_contexts(socket, assigns, keys) do
+    # The parent socket should have context data available via assigns
+    parent_contexts = assigns[:__parent_contexts__] || %{}
+    parent_versions = assigns[:__shared_assigns_versions__] || %{}
 
-    socket
-    |> Phoenix.Component.assign(contexts)
-    |> Phoenix.Component.assign(:__consumer_context_versions__, versions)
-  end
-
-  @doc """
-  Updates context values in component if versions have changed.
-  """
-  def maybe_update_contexts(socket, assigns, keys) do
-    current_versions = socket.assigns[:__consumer_context_versions__] || %{}
-    parent_versions = get_versions_from_parent(socket, keys)
-
-    # Check if any versions have changed
-    changed_keys =
-      Enum.filter(keys, fn key ->
-        current_versions[key] != parent_versions[key]
+    # Build context assigns map for our needed keys
+    context_assigns =
+      Enum.reduce(keys, %{}, fn key, acc ->
+        case Map.get(parent_contexts, key) do
+          nil -> acc
+          value -> Map.put(acc, key, value)
+        end
       end)
 
-    if changed_keys != [] do
-      # Update contexts for changed keys
-      updated_contexts = get_contexts_from_parent(socket, changed_keys)
-
-      socket
-      |> Phoenix.Component.assign(updated_contexts)
-      |> Phoenix.Component.assign(:__consumer_context_versions__, parent_versions)
-    else
-      socket
-    end
-  end
-
-  defp get_contexts_from_parent(socket, keys) do
-    # Get the parent LiveView process and extract contexts
-    parent_pid = socket.parent_pid || self()
-
-    parent_contexts =
-      case Process.get({:shared_assigns_contexts, parent_pid}) do
-        nil ->
-          # Try to get from the current process if we're in the LiveView
-          Process.get(:shared_assigns_contexts) || %{}
-
-        contexts ->
-          contexts
-      end
-
-    # Build context assigns map
-    Enum.reduce(keys, %{}, fn key, acc ->
-      case Map.get(parent_contexts, key) do
-        nil -> acc
-        value -> Map.put(acc, key, value)
-      end
-    end)
-  end
-
-  defp get_versions_from_parent(socket, keys) do
-    # Get the parent LiveView process and extract versions
-    parent_pid = socket.parent_pid || self()
-
-    parent_versions =
-      case Process.get({:shared_assigns_versions, parent_pid}) do
-        nil ->
-          # Try to get from the current process if we're in the LiveView
-          Process.get(:shared_assigns_versions) || %{}
-
-        versions ->
-          versions
-      end
-
     # Build versions map for our keys
-    Enum.reduce(keys, %{}, fn key, acc ->
-      case Map.get(parent_versions, key) do
-        nil -> acc
-        version -> Map.put(acc, key, version)
-      end
-    end)
+    version_assigns =
+      Enum.reduce(keys, %{}, fn key, acc ->
+        case Map.get(parent_versions, key) do
+          nil -> acc
+          version -> Map.put(acc, key, version)
+        end
+      end)
+
+    socket
+    |> Phoenix.Component.assign(context_assigns)
+    |> Phoenix.Component.assign(:__consumer_context_versions__, version_assigns)
   end
 end
