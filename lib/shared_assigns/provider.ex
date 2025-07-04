@@ -50,7 +50,7 @@ defmodule SharedAssigns.Provider do
       @doc """
       Updates a context value using the given function.
       """
-      def update_context(socket, key, default, fun) do
+      def update_context(socket, key, _default, fun) do
         SharedAssigns.update_context(socket, key, fun)
       end
 
@@ -80,7 +80,7 @@ defmodule SharedAssigns.Provider do
   @doc """
   Helper function for updating context values from within the provider LiveView.
   """
-  def update_context(socket, key, default, fun) do
+  def update_context(socket, key, _default, fun) do
     SharedAssigns.update_context(socket, key, fun)
   end
 end
