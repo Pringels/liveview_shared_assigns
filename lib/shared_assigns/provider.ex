@@ -31,6 +31,7 @@ defmodule SharedAssigns.Provider do
 
       def mount(params, session, socket) do
         socket = SharedAssigns.initialize_contexts(socket, @shared_assigns_contexts)
+        socket = SharedAssigns.initialize_contexts(socket, @shared_assigns_contexts)
         {:ok, socket}
       end
 
