@@ -5,22 +5,18 @@ defmodule SharedAssigns.PubSubTest do
   defmodule TestPubSub do
     use GenServer
 
-    def start_link(opts) do
-      GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
+    def start_link(_opts) do
+      GenServer.start_link(__MODULE__, %{subscriptions: %{}}, name: __MODULE__)
     end
 
     def init(state), do: {:ok, state}
 
     def subscribe(pubsub, topic) when pubsub == __MODULE__ do
-      Registry.register(TestPubSub.Registry, topic, nil)
+      GenServer.call(__MODULE__, {:subscribe, topic, self()})
     end
 
     def broadcast(pubsub, topic, message) when pubsub == __MODULE__ do
-      Registry.dispatch(TestPubSub.Registry, topic, fn entries ->
-        for {pid, _} <- entries, do: send(pid, message)
-      end)
-
-      :ok
+      GenServer.call(__MODULE__, {:broadcast, topic, message})
     end
 
     def broadcast!(pubsub, topic, message) when pubsub == __MODULE__ do
@@ -41,6 +37,17 @@ defmodule SharedAssigns.PubSubTest do
 
     def direct_broadcast!(_node, pubsub, topic, message) when pubsub == __MODULE__ do
       broadcast(pubsub, topic, message)
+    end
+
+    def handle_call({:subscribe, topic, pid}, _from, state) do
+      subscriptions = Map.update(state.subscriptions, topic, [pid], fn pids -> [pid | pids] end)
+      {:reply, :ok, %{state | subscriptions: subscriptions}}
+    end
+
+    def handle_call({:broadcast, topic, message}, _from, state) do
+      pids = Map.get(state.subscriptions, topic, [])
+      Enum.each(pids, fn pid -> send(pid, message) end)
+      {:reply, :ok, state}
     end
   end
 
@@ -91,7 +98,6 @@ defmodule SharedAssigns.PubSubTest do
   @endpoint SharedAssigns.TestEndpoint
 
   setup do
-    start_supervised!({Registry, keys: :duplicate, name: TestPubSub.Registry})
     start_supervised!(TestPubSub)
     :ok
   end
