@@ -31,7 +31,7 @@ defmodule SharedAssigns.Consumer do
 
       def mount(socket) do
         socket = SharedAssigns.Consumer.inject_contexts(socket, @shared_assigns_consumer_keys)
-        super(socket)
+        {:ok, socket}
       end
 
       def update(assigns, socket) do
@@ -43,7 +43,7 @@ defmodule SharedAssigns.Consumer do
             @shared_assigns_consumer_keys
           )
 
-        super(assigns, socket)
+        {:ok, assign(socket, assigns)}
       end
 
       defoverridable mount: 1, update: 2
