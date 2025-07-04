@@ -68,7 +68,7 @@ defmodule SharedAssignsDemoWeb.PageLive do
         />
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Sidebar Component -->
             <div class="lg:col-span-1">
               <.live_component
@@ -80,8 +80,8 @@ defmodule SharedAssignsDemoWeb.PageLive do
             </div>
             
     <!-- Main Content -->
-            <div class="lg:col-span-3">
-              <div class="bg-white rounded-xl shadow-lg p-8">
+            <div class="lg:col-span-2">
+              <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
                 <h1 class="text-3xl font-bold text-gray-900 mb-6">SharedAssigns Demo</h1>
 
                 <div class="space-y-6">
@@ -165,37 +165,36 @@ defmodule SharedAssignsDemoWeb.PageLive do
                       />
                     </div>
                   </div>
-                  
-    <!-- Link to Child LiveView -->
-                  <div class="mt-8 p-6 bg-purple-50 rounded-lg border border-purple-200">
-                    <h3 class="text-lg font-semibold text-purple-900 mb-2">
-                      🚀 NEW: Nested LiveView Support
-                    </h3>
-                    <p class="text-purple-800 mb-4">
-                      SharedAssigns now supports context sharing across separate LiveView processes using PubSub!
-                    </p>
-                    <.link
-                      navigate={~p"/child"}
-                      class="inline-flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-                    >
-                      View Child LiveView Demo →
-                    </.link>
-                    <p class="mt-2 text-sm text-purple-700">
-                      The child LiveView will automatically receive context updates from this parent!
-                    </p>
-                  </div>
-
-                  <div class="mt-8 p-4 bg-blue-50 rounded-lg">
-                    <h3 class="font-semibold text-blue-900 mb-2">How it works:</h3>
-                    <ul class="text-sm text-blue-800 space-y-1">
-                      <li>• Each component declares which contexts it needs</li>
-                      <li>• Only components using changed contexts re-render</li>
-                      <li>• No prop drilling - contexts are accessed directly</li>
-                      <li>• Version tracking ensures granular reactivity</li>
-                      <li>• <strong>NEW:</strong> PubSub enables cross-LiveView context sharing</li>
-                    </ul>
-                  </div>
                 </div>
+              </div>
+              
+    <!-- Embedded Nested LiveView -->
+              <div class="bg-purple-50 rounded-xl shadow-lg p-8 border-2 border-purple-200">
+                <div class="mb-6">
+                  <h2 class="text-2xl font-bold text-purple-900 mb-2">
+                    🚀 Nested LiveView (Embedded)
+                  </h2>
+                  <p class="text-purple-800">
+                    This is a separate LiveView process running within the parent,
+                    automatically receiving context updates via PubSub!
+                  </p>
+                </div>
+
+                {live_render(@socket, SharedAssignsDemoWeb.ChildLive,
+                  id: :embedded_child,
+                  session: %{}
+                )}
+              </div>
+
+              <div class="mt-8 p-4 bg-blue-50 rounded-lg">
+                <h3 class="font-semibold text-blue-900 mb-2">How nested LiveViews work:</h3>
+                <ul class="text-sm text-blue-800 space-y-1">
+                  <li>• Parent LiveView provides contexts and broadcasts changes via PubSub</li>
+                  <li>• Nested LiveView subscribes to specific contexts on mount</li>
+                  <li>• Context changes automatically propagate across LiveView processes</li>
+                  <li>• Zero prop drilling - contexts flow seamlessly between processes</li>
+                  <li>• Each LiveView maintains its own state and lifecycle</li>
+                </ul>
               </div>
             </div>
           </div>
