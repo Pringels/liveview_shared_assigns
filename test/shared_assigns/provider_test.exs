@@ -27,33 +27,7 @@ defmodule SharedAssigns.ProviderTest do
     end
   end
 
-  defmodule TestEndpoint do
-    use Phoenix.Endpoint, otp_app: :shared_assigns_demo
-
-    socket "/live", Phoenix.LiveView.Socket,
-      websocket: [connect_info: [session: @session_options]]
-  end
-
-  defmodule TestRouter do
-    use Phoenix.Router
-    import Phoenix.LiveView.Router
-
-    scope "/" do
-      pipe_through :browser
-      live "/test", SharedAssigns.ProviderTest.TestProvider
-    end
-
-    pipeline :browser do
-      plug :accepts, ["html"]
-      plug :fetch_session
-      plug :fetch_live_flash
-      plug :put_root_layout, {SharedAssignsDemoWeb.Layouts, :root}
-      plug :protect_from_forgery
-      plug :put_secure_browser_headers
-    end
-  end
-
-  @endpoint TestEndpoint
+  @endpoint SharedAssignsDemoWeb.Endpoint
 
   describe "Provider macro" do
     test "initializes contexts on mount" do
