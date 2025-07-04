@@ -26,8 +26,6 @@ defmodule SharedAssigns.Provider do
     contexts = Keyword.get(opts, :contexts, [])
 
     quote do
-      import SharedAssigns.Provider, only: [put_context: 3, update_context: 4]
-
       @before_compile SharedAssigns.Provider
       @shared_assigns_contexts unquote(contexts)
 
