@@ -44,21 +44,21 @@ defmodule SharedAssigns.Provider do
       Puts a context value, triggering re-renders for consumers of this context.
       """
       def put_context(socket, key, value) do
-        SharedAssigns.put(socket, key, value)
+        SharedAssigns.put_context(socket, key, value)
       end
 
       @doc """
       Updates a context value using the given function.
       """
       def update_context(socket, key, default, fun) do
-        SharedAssigns.update(socket, key, default, fun)
+        SharedAssigns.update_context(socket, key, default, fun)
       end
 
       @doc """
       Gets the current value of a context.
       """
       def get_context(socket, key, default \\ nil) do
-        SharedAssigns.get(socket, key, default)
+        SharedAssigns.get_context(socket, key, default)
       end
 
       @doc """
@@ -74,13 +74,13 @@ defmodule SharedAssigns.Provider do
   Helper function for putting context values from within the provider LiveView.
   """
   def put_context(socket, key, value) do
-    SharedAssigns.put(socket, key, value)
+    SharedAssigns.put_context(socket, key, value)
   end
 
   @doc """
   Helper function for updating context values from within the provider LiveView.
   """
   def update_context(socket, key, default, fun) do
-    SharedAssigns.update(socket, key, default, fun)
+    SharedAssigns.update_context(socket, key, default, fun)
   end
 end
