@@ -55,17 +55,30 @@ defmodule SharedAssignsDemoWeb.PageLive do
   end
 
   def render(assigns) do
+    # Extract contexts for components
+    contexts = assigns.socket.private[:__shared_assigns_contexts__] || %{}
+
     ~H"""
     <Layouts.app flash={@flash}>
       <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
         <!-- Header Component -->
-        <.live_component module={SharedAssignsDemoWeb.HeaderComponent} id="header" />
+        <.live_component
+          module={SharedAssignsDemoWeb.HeaderComponent}
+          id="header"
+          __parent_contexts__={contexts}
+          __shared_assigns_versions__={@__shared_assigns_versions__}
+        />
 
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
             <!-- Sidebar Component -->
             <div class="lg:col-span-1">
-              <.live_component module={SharedAssignsDemoWeb.SidebarComponent} id="sidebar" />
+              <.live_component
+                module={SharedAssignsDemoWeb.SidebarComponent}
+                id="sidebar"
+                __parent_contexts__={contexts}
+                __shared_assigns_versions__={@__shared_assigns_versions__}
+              />
             </div>
             
     <!-- Main Content -->
@@ -85,6 +98,8 @@ defmodule SharedAssignsDemoWeb.PageLive do
                     color="blue"
                     status="online"
                     context_type="theme"
+                    __parent_contexts__={contexts}
+                    __shared_assigns_versions__={@__shared_assigns_versions__}
                   />
 
                   <.live_component
@@ -96,6 +111,8 @@ defmodule SharedAssignsDemoWeb.PageLive do
                     color="green"
                     status="away"
                     context_type="user_role"
+                    __parent_contexts__={contexts}
+                    __shared_assigns_versions__={@__shared_assigns_versions__}
                   />
                 </div>
               </div>
