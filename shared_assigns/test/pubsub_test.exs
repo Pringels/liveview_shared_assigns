@@ -3,6 +3,9 @@ defmodule SharedAssigns.PubSubTest do
 
   describe "PubSubProvider module compilation" do
     test "defines the expected macros and functions" do
+      # Ensure module is loaded
+      Code.ensure_loaded(SharedAssigns.PubSubProvider)
+
       # Test that the module compiles and exports expected macros and functions
       assert macro_exported?(SharedAssigns.PubSubProvider, :__using__, 1)
       assert function_exported?(SharedAssigns.PubSubProvider, :broadcast_context_change, 4)
@@ -11,6 +14,9 @@ defmodule SharedAssigns.PubSubTest do
 
   describe "PubSubConsumer module compilation" do
     test "defines the expected macros and functions" do
+      # Ensure module is loaded
+      Code.ensure_loaded(SharedAssigns.PubSubConsumer)
+
       # Test that the module compiles and exports expected macros
       assert macro_exported?(SharedAssigns.PubSubConsumer, :__using__, 1)
     end
@@ -47,12 +53,32 @@ defmodule SharedAssigns.PubSubTest do
 
   describe "PubSub broadcasting function" do
     test "broadcast_context_change/4 handles arguments correctly" do
+      # Ensure module is loaded
+      Code.ensure_loaded(SharedAssigns.PubSubProvider)
+
       # Test that the function exists and doesn't crash with mock data
       # We can't test actual broadcasting without a real PubSub setup
       assert function_exported?(SharedAssigns.PubSubProvider, :broadcast_context_change, 4)
 
       # Test would require actual PubSub setup, but function signature is verified
       assert true
+    end
+  end
+
+  describe "Module verification with runtime checks" do
+    test "modules are properly loaded and available" do
+      # Double-check that modules are available at runtime
+      {:module, _} = Code.ensure_loaded(SharedAssigns.PubSubProvider)
+      {:module, _} = Code.ensure_loaded(SharedAssigns.PubSubConsumer)
+
+      # Verify they respond to module info
+      provider_macros = SharedAssigns.PubSubProvider.__info__(:macros)
+      consumer_macros = SharedAssigns.PubSubConsumer.__info__(:macros)
+      provider_functions = SharedAssigns.PubSubProvider.__info__(:functions)
+
+      assert {:__using__, 1} in provider_macros
+      assert {:__using__, 1} in consumer_macros
+      assert {:broadcast_context_change, 4} in provider_functions
     end
   end
 end
