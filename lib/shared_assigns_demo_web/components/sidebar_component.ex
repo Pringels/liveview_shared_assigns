@@ -1,5 +1,6 @@
 defmodule SharedAssignsDemoWeb.SidebarComponent do
   use Phoenix.LiveComponent
+  import SharedAssignsDemoWeb.CoreComponents
   use SharedAssigns.Consumer, keys: [:user_role]
 
   def render(assigns) do
