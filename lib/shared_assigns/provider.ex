@@ -31,14 +31,6 @@ defmodule SharedAssigns.Provider do
 
       def mount(params, session, socket) do
         socket = SharedAssigns.initialize_contexts(socket, @shared_assigns_contexts)
-
-        socket =
-          Phoenix.Component.assign(
-            socket,
-            :__shared_assigns_versions__,
-            socket.assigns[:__shared_assigns_versions__] || %{}
-          )
-
         {:ok, socket}
       end
 
