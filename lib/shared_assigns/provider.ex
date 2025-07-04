@@ -31,7 +31,6 @@ defmodule SharedAssigns.Provider do
 
       def mount(params, session, socket) do
         socket = SharedAssigns.initialize_contexts(socket, @shared_assigns_contexts)
-        socket = SharedAssigns.initialize_contexts(socket, @shared_assigns_contexts)
         {:ok, socket}
       end
 
@@ -51,15 +50,15 @@ defmodule SharedAssigns.Provider do
       @doc """
       Updates a context value using the given function.
       """
-      def update_context(socket, key, _default, fun) do
+      def update_context(socket, key, fun) do
         SharedAssigns.update_context(socket, key, fun)
       end
 
       @doc """
       Gets the current value of a context.
       """
-      def get_context(socket, key, default \\ nil) do
-        SharedAssigns.get_context(socket, key, default)
+      def get_context(socket, key) do
+        SharedAssigns.get_context(socket, key)
       end
 
       @doc """
@@ -81,7 +80,7 @@ defmodule SharedAssigns.Provider do
   @doc """
   Helper function for updating context values from within the provider LiveView.
   """
-  def update_context(socket, key, _default, fun) do
+  def update_context(socket, key, fun) do
     SharedAssigns.update_context(socket, key, fun)
   end
 end
