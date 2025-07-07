@@ -10,21 +10,8 @@ defmodule SharedAssignsDemoWeb.PageLive do
     pubsub: SharedAssignsDemo.PubSub
 
   def mount(_params, _session, socket) do
-    # Initialize SharedAssigns contexts
-    socket =
-      SharedAssigns.initialize_contexts(socket,
-        theme: "light",
-        user_role: "guest",
-        sidebar_open: false
       )
 
-    # Also assign contexts to socket assigns for template access
-    socket =
-      Phoenix.Component.assign(socket, :contexts, %{
-        theme: "light",
-        user_role: "guest",
-        sidebar_open: false
-      })
 
     {:ok, socket}
   end
