@@ -25,6 +25,7 @@ defmodule Demo.MixProject do
       {:phoenix_live_view, "~> 0.20.0"},
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:phoenix_live_dashboard, "~> 0.8.0", only: :dev},
+      {:esbuild, "~> 0.7", runtime: Mix.env() == :dev},
       {:plug_cowboy, "~> 2.5"},
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.2"},

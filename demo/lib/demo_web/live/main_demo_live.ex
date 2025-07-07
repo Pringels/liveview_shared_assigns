@@ -9,17 +9,18 @@ defmodule DemoWeb.MainDemoLive do
       theme: "light",
       user: %{name: "Guest", role: "guest"},
       counter: 0
-    ]
+    ],
+    pubsub: Demo.PubSub
 
   def mount(_params, _session, socket) do
     # Context initialization happens automatically via the Provider macro
-    # Add any additional setup here if needed
     {:ok, socket}
   end
 
   def handle_event("toggle_theme", _params, socket) do
     current_theme = get_context(socket, :theme)
     new_theme = if current_theme == "light", do: "dark", else: "light"
+    IO.inspect(%{current_theme: current_theme, new_theme: new_theme}, label: "Theme toggle")
     {:noreply, put_context(socket, :theme, new_theme)}
   end
 
@@ -37,17 +38,23 @@ defmodule DemoWeb.MainDemoLive do
   end
 
   def render(assigns) do
+    IO.inspect(
+      %{
+        counter: assigns[:counter],
+        theme: assigns[:theme],
+        user: assigns[:user],
+        versions: assigns[:__shared_assigns_versions__]
+      },
+      label: "MainDemoLive.render"
+    )
+
     ~H"""
     <div class={[
       "min-h-screen transition-colors duration-300",
       (@theme || "light") == "dark" && "bg-gray-900 text-white" || "bg-gray-50 text-gray-900"
     ]}>
       <!-- Header Component with seamless SharedAssigns -->
-      <.sa_component
-        module={DemoWeb.Components.HeaderComponent}
-        id="header"
-        socket={@socket}
-      />
+      <.sa_live_component module={DemoWeb.Components.HeaderComponent} id="header" />
 
       <div class="max-w-4xl mx-auto p-6">
         <!-- Context Controls -->
@@ -65,9 +72,9 @@ defmodule DemoWeb.MainDemoLive do
                 phx-click="toggle_theme"
                 class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors"
               >
-                Switch to {(@theme || "light") == "light" && "Dark" || "Light"}
+                Switch to <%= if (@theme || "light") == "light", do: "Dark", else: "Light" %>
               </button>
-              <p class="text-sm text-gray-500 mt-1">Current: {@theme || "light"}</p>
+              <p class="text-sm text-gray-500 mt-1">Current: <%= @theme || "light" %></p>
             </div>
 
             <!-- User Control -->
@@ -108,7 +115,7 @@ defmodule DemoWeb.MainDemoLive do
                 >
                   -
                 </button>
-                <span class="font-mono text-lg">{@counter || 0}</span>
+                <span class="font-mono text-lg"><%= @counter || 0 %></span>
                 <button
                   phx-click="increment"
                   class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md"
@@ -123,40 +130,31 @@ defmodule DemoWeb.MainDemoLive do
         <!-- Components Demo with seamless SharedAssigns -->
         <div class="grid md:grid-cols-2 gap-6 mb-6">
           <!-- User Info Component -->
-          <.sa_component
-            module={DemoWeb.Components.UserInfoComponent}
-            id="user-info"
-            socket={@socket}
-          />
+          <.sa_live_component module={DemoWeb.Components.UserInfoComponent} id="user-info" />
 
           <!-- Counter Display Component -->
-          <.sa_component
-            module={DemoWeb.Components.CounterDisplayComponent}
-            id="counter-display"
-            socket={@socket}
-          />
+          <.sa_live_component module={DemoWeb.Components.CounterDisplayComponent} id="counter-display" />
+        </div>
+
+        <!-- Nested Components Demo -->
+        <div class="mb-6">
+          <h2 class="text-xl font-bold mb-4">Deep Nesting Demo</h2>
+          <p class="mb-4">This container has nested SharedAssigns components inside it:</p>
+          <.sa_live_component module={DemoWeb.Components.NestedContainerComponent} id="nested-container" />
         </div>
 
         <!-- Child LiveView Demo -->
+
         <div class={[
           "bg-blue-50 border-2 border-blue-200 rounded-lg p-6",
           (@theme || "light") == "dark" && "bg-blue-900 border-blue-700"
         ]}>
           <h2 class="text-xl font-bold mb-4">Nested LiveView Demo</h2>
-          <p class="mb-4">This section is a separate LiveView that receives contexts from the parent:</p>
+          <p class="mb-4">This section is a separate LiveView that receives contexts from the parent via PubSub:</p>
 
-          <%= live_render(@socket, DemoWeb.ChildDemoLive,
-                id: "child-demo",
-                session: %{
-                  "parent_contexts" => %{
-                    theme: @theme || "light",
-                    user: @user || %{name: "Guest", role: "guest"},
-                    counter: @counter || 0
-                  },
-                  "parent_versions" => Map.get(assigns, :__shared_assigns_versions__, %{})
-                }
-              ) %>
+          <%= live_render(@socket, DemoWeb.ChildDemoLive, id: "child-demo") %>
         </div>
+
       </div>
     </div>
     """

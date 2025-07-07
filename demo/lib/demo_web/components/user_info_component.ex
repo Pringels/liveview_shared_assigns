@@ -5,6 +5,20 @@ defmodule DemoWeb.Components.UserInfoComponent do
   use Phoenix.LiveComponent
   use SharedAssigns.Consumer, contexts: [:user, :theme]
 
+  def update(assigns, socket) do
+    IO.inspect(
+      %{
+        component: __MODULE__,
+        user: assigns[:user],
+        theme: assigns[:theme],
+        version_key: assigns[:__sa_version_key]
+      },
+      label: "UserInfoComponent.update"
+    )
+
+    {:ok, assign(socket, assigns)}
+  end
+
   def render(assigns) do
     ~H"""
     <div class={[
@@ -16,7 +30,7 @@ defmodule DemoWeb.Components.UserInfoComponent do
       <div class="space-y-2">
         <div class="flex justify-between">
           <span class="font-medium">Name:</span>
-          <span>{Map.get(@user || %{}, :name, "Unknown")}</span>
+          <span><%= Map.get(@user || %{}, :name, "Unknown") %></span>
         </div>
 
         <div class="flex justify-between">
@@ -29,7 +43,7 @@ defmodule DemoWeb.Components.UserInfoComponent do
               _ -> "bg-gray-100 text-gray-800"
             end
           ]}>
-            {String.capitalize(Map.get(@user || %{}, :role, "guest"))}
+            <%= String.capitalize(Map.get(@user || %{}, :role, "guest")) %>
           </span>
         </div>
 

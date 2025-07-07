@@ -7,7 +7,9 @@ config :demo, DemoWeb.Endpoint,
   debug_errors: true,
   secret_key_base:
     "demo_secret_key_base_change_me_in_production_very_long_string_at_least_64_chars",
-  watchers: []
+  watchers: [
+    esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]}
+  ]
 
 config :demo, dev_routes: true
 

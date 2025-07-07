@@ -33,7 +33,7 @@ defmodule DemoWeb.Components.HeaderComponent do
                 <% _ -> %> 👋
               <% end %>
             </span>
-            <span>{Map.get(@user || %{}, :name, "Unknown")}</span>
+            <span><%= Map.get(@user || %{}, :name, "Unknown") %></span>
           </div>
 
           <div class={[

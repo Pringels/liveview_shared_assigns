@@ -36,8 +36,15 @@ defmodule SharedAssigns do
   Gets the current value of a context.
   """
   def get_context(socket, key) do
-    contexts = Map.get(socket.assigns, :__shared_assigns_contexts__, %{})
-    Map.get(contexts, key)
+    # First try to get from actual assigns, then fall back to context storage
+    case Map.get(socket.assigns, key) do
+      nil ->
+        contexts = Map.get(socket.assigns, :__shared_assigns_contexts__, %{})
+        Map.get(contexts, key)
+
+      value ->
+        value
+    end
   end
 
   @doc """
@@ -107,5 +114,53 @@ defmodule SharedAssigns do
     keys
     |> Enum.map(fn key -> {key, Map.get(contexts, key)} end)
     |> Enum.into(%{})
+  end
+
+  # PubSub-related functions for nested LiveViews
+
+  @doc """
+  Sets up PubSub for a provider LiveView.
+  """
+  def setup_pubsub_provider(socket, pubsub_module, _contexts) do
+    # Store the PubSub module for later use and register as provider
+    Phoenix.PubSub.subscribe(pubsub_module, "context_request")
+    assign(socket, :__shared_assigns_pubsub__, pubsub_module)
+  end
+
+  @doc """
+  Sets up PubSub subscription for a consumer LiveView.
+  """
+  def setup_pubsub_consumer(socket, pubsub_module, context_keys, _session) do
+    # Subscribe to context changes
+    Enum.each(context_keys, fn key ->
+      Phoenix.PubSub.subscribe(pubsub_module, "context_#{key}")
+    end)
+
+    # Initialize with default values to avoid KeyError during render
+    socket =
+      Enum.reduce(context_keys, socket, fn key, acc ->
+        case key do
+          :theme -> assign(acc, :theme, "light")
+          :user -> assign(acc, :user, %{name: "Unknown", role: "guest"})
+          :counter -> assign(acc, :counter, 0)
+          _ -> assign(acc, key, nil)
+        end
+      end)
+
+    # Request current context values from any provider
+    Phoenix.PubSub.broadcast(
+      pubsub_module,
+      "context_request",
+      {:request_contexts, context_keys, self()}
+    )
+
+    assign(socket, :__shared_assigns_pubsub__, pubsub_module)
+  end
+
+  @doc """
+  Broadcasts a context change via PubSub.
+  """
+  def broadcast_context_change(pubsub_module, key, value) do
+    Phoenix.PubSub.broadcast(pubsub_module, "context_#{key}", {:context_changed, key, value})
   end
 end

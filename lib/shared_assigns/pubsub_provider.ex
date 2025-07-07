@@ -21,7 +21,7 @@ defmodule SharedAssigns.PubSubProvider do
       end
 
   This automatically:
-  - Initializes the contexts in `mount/3` 
+  - Initializes the contexts in `mount/3`
   - Provides helper functions for updating contexts
   - Sets up version tracking for reactivity
   - Broadcasts context changes via PubSub for nested LiveViews to receive
@@ -39,28 +39,81 @@ defmodule SharedAssigns.PubSubProvider do
       @shared_assigns_contexts unquote(contexts)
       @shared_assigns_pubsub unquote(pubsub)
 
-      def mount(params, session, socket) do
-        require Logger
+      # Import the seamless component helpers
+      import SharedAssigns.Helpers, only: [sa_component: 1]
+    end
+  end
 
-        Logger.info(
-          "PubSubProvider mounting with contexts: #{inspect(Keyword.keys(@shared_assigns_contexts))}"
-        )
+  defmacro __before_compile__(env) do
+    # Check if the module already defines mount/3
+    has_mount = Module.defines?(env.module, {:mount, 3})
 
-        socket = SharedAssigns.initialize_contexts(socket, @shared_assigns_contexts)
+    if has_mount do
+      # If mount/3 exists, wrap it with context initialization and PubSub setup
+      quote do
+        defoverridable mount: 3
 
-        # Subscribe to initial value requests for all our contexts
-        Enum.each(Keyword.keys(@shared_assigns_contexts), fn key ->
-          Phoenix.PubSub.subscribe(
-            @shared_assigns_pubsub,
-            "shared_assigns:#{key}:request_initial"
+        def mount(params, session, socket) do
+          require Logger
+
+          Logger.info(
+            "PubSubProvider mounting with contexts: #{inspect(Keyword.keys(@shared_assigns_contexts))}"
           )
 
-          Logger.info("PubSubProvider subscribed to initial requests for: #{inspect(key)}")
-        end)
+          socket = SharedAssigns.initialize_contexts(socket, @shared_assigns_contexts)
 
-        {:ok, socket}
+          # Subscribe to initial value requests for all our contexts
+          Enum.each(Keyword.keys(@shared_assigns_contexts), fn key ->
+            Phoenix.PubSub.subscribe(
+              @shared_assigns_pubsub,
+              "shared_assigns:#{key}:request_initial"
+            )
+
+            Logger.info("PubSubProvider subscribed to initial requests for: #{inspect(key)}")
+          end)
+
+          # Call the original mount function with the initialized socket
+          case super(params, session, socket) do
+            {:ok, returned_socket} -> {:ok, returned_socket}
+            {:ok, returned_socket, opts} -> {:ok, returned_socket, opts}
+            other -> other
+          end
+        end
+
+        unquote(generate_helper_functions())
       end
+    else
+      # If no mount/3 exists, create a default one
+      quote do
+        def mount(_params, _session, socket) do
+          require Logger
 
+          Logger.info(
+            "PubSubProvider mounting with contexts: #{inspect(Keyword.keys(@shared_assigns_contexts))}"
+          )
+
+          socket = SharedAssigns.initialize_contexts(socket, @shared_assigns_contexts)
+
+          # Subscribe to initial value requests for all our contexts
+          Enum.each(Keyword.keys(@shared_assigns_contexts), fn key ->
+            Phoenix.PubSub.subscribe(
+              @shared_assigns_pubsub,
+              "shared_assigns:#{key}:request_initial"
+            )
+
+            Logger.info("PubSubProvider subscribed to initial requests for: #{inspect(key)}")
+          end)
+
+          {:ok, socket}
+        end
+
+        unquote(generate_helper_functions())
+      end
+    end
+  end
+
+  defp generate_helper_functions do
+    quote do
       def handle_info({:request_initial_value, key, requesting_pid}, socket) do
         require Logger
 
@@ -85,12 +138,6 @@ defmodule SharedAssigns.PubSubProvider do
         {:noreply, socket}
       end
 
-      defoverridable mount: 3
-    end
-  end
-
-  defmacro __before_compile__(_env) do
-    quote do
       @doc """
       Puts a context value and broadcasts the change via PubSub.
       """

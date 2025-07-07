@@ -1,5 +1,5 @@
 {application,shared_assigns,
-             [{config_mtime,1751887792},
+             [{config_mtime,1751892881},
               {optional_applications,[]},
               {applications,[kernel,stdlib,elixir,logger,phoenix_live_view,
                              phoenix]},

@@ -5,6 +5,20 @@ defmodule DemoWeb.Components.CounterDisplayComponent do
   use Phoenix.LiveComponent
   use SharedAssigns.Consumer, contexts: [:counter, :theme]
 
+  def update(assigns, socket) do
+    IO.inspect(
+      %{
+        component: __MODULE__,
+        counter: assigns[:counter],
+        theme: assigns[:theme],
+        version_key: assigns[:__sa_version_key]
+      },
+      label: "CounterDisplayComponent.update"
+    )
+
+    {:ok, assign(socket, assigns)}
+  end
+
   def render(assigns) do
     ~H"""
     <div class={[
@@ -22,7 +36,7 @@ defmodule DemoWeb.Components.CounterDisplayComponent do
             true -> "text-gray-500"
           end
         ]}>
-          {@counter || 0}
+          <%= @counter || 0 %>
         </div>
 
         <div class="flex justify-center space-x-2 mb-3">
@@ -38,7 +52,7 @@ defmodule DemoWeb.Components.CounterDisplayComponent do
             </div>
           <% end %>
           <%= if abs(@counter || 0) > 10 do %>
-            <span class="text-sm text-gray-500">...+{abs(@counter || 0) - 10}</span>
+            <span class="text-sm text-gray-500">...+<%= abs(@counter || 0) - 10 %></span>
           <% end %>
         </div>
 
