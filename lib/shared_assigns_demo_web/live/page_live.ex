@@ -118,8 +118,7 @@ defmodule SharedAssignsDemoWeb.PageLive do
           >
           </div>
         </div>
-        
-    <!-- Header Component -->
+        <!-- Header Component -->
         <.live_component
           module={SharedAssignsDemoWeb.HeaderComponent}
           id="header"
@@ -142,8 +141,7 @@ defmodule SharedAssignsDemoWeb.PageLive do
                 __shared_assigns_versions__={@__shared_assigns_versions__}
               />
             </div>
-            
-    <!-- Main Content -->
+            <!-- Main Content -->
             <div class={[
               "transition-all duration-500 ease-in-out",
               @contexts.sidebar_open && "lg:col-span-3",
@@ -179,8 +177,7 @@ defmodule SharedAssignsDemoWeb.PageLive do
                       </span>
                     </p>
                   </div>
-                  
-    <!-- Sidebar Toggle -->
+                  <!-- Sidebar Toggle -->
                   <button
                     phx-click="toggle_sidebar"
                     class={[
@@ -225,14 +222,13 @@ defmodule SharedAssignsDemoWeb.PageLive do
                     >
                       <span class="group-hover:animate-pulse">
                         {if @contexts.theme == "dark",
-                          do: "☀️ Switch to Light",
-                          else: "🌙 Switch to Dark"}
+                        do: "☀️ Switch to Light",
+                        else: "🌙 Switch to Dark"}
                       </span>
                       <span class="ml-2 text-sm opacity-80">(Current: {@contexts.theme})</span>
                     </button>
                   </div>
-                  
-    <!-- Role Controls -->
+                  <!-- Role Controls -->
                   <div class="space-y-4">
                     <h2 class={[
                       "text-2xl font-semibold flex items-center",
@@ -300,8 +296,7 @@ defmodule SharedAssignsDemoWeb.PageLive do
                       </button>
                     </div>
                   </div>
-                  
-    <!-- User Cards showing granular re-renders -->
+                  <!-- User Cards showing granular re-renders -->
                   <div class="space-y-4">
                     <h2 class={[
                       "text-2xl font-semibold",
@@ -347,8 +342,7 @@ defmodule SharedAssignsDemoWeb.PageLive do
                   </div>
                 </div>
               </div>
-              
-    <!-- Embedded Nested LiveView -->
+              <!-- Embedded Nested LiveView -->
               <div class={[
                 "rounded-2xl shadow-2xl p-8 border-2 backdrop-blur-sm transition-all duration-300 hover:shadow-3xl",
                 @contexts.theme == "dark" && "bg-purple-900/80 border-purple-500/50 text-white",
@@ -371,10 +365,9 @@ defmodule SharedAssignsDemoWeb.PageLive do
                     automatically receiving context updates via PubSub!
                   </p>
                 </div>
-
                 {live_render(@socket, SharedAssignsDemoWeb.ChildLive,
-                  id: :embedded_child,
-                  session: %{}
+                id: :embedded_child,
+                session: %{}
                 )}
               </div>
 
