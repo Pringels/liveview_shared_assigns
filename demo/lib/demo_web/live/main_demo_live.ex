@@ -20,7 +20,6 @@ defmodule DemoWeb.MainDemoLive do
   def handle_event("toggle_theme", _params, socket) do
     current_theme = get_context(socket, :theme)
     new_theme = if current_theme == "light", do: "dark", else: "light"
-    IO.inspect(%{current_theme: current_theme, new_theme: new_theme}, label: "Theme toggle")
     {:noreply, put_context(socket, :theme, new_theme)}
   end
 
@@ -38,16 +37,6 @@ defmodule DemoWeb.MainDemoLive do
   end
 
   def render(assigns) do
-    IO.inspect(
-      %{
-        counter: assigns[:counter],
-        theme: assigns[:theme],
-        user: assigns[:user],
-        versions: assigns[:__shared_assigns_versions__]
-      },
-      label: "MainDemoLive.render"
-    )
-
     ~H"""
     <div class={[
       "min-h-screen transition-colors duration-300",

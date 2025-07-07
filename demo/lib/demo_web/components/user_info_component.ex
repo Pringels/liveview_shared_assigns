@@ -5,20 +5,6 @@ defmodule DemoWeb.Components.UserInfoComponent do
   use Phoenix.LiveComponent
   use SharedAssigns.Consumer, contexts: [:user, :theme]
 
-  def update(assigns, socket) do
-    IO.inspect(
-      %{
-        component: __MODULE__,
-        user: assigns[:user],
-        theme: assigns[:theme],
-        version_key: assigns[:__sa_version_key]
-      },
-      label: "UserInfoComponent.update"
-    )
-
-    {:ok, assign(socket, assigns)}
-  end
-
   def render(assigns) do
     ~H"""
     <div class={[

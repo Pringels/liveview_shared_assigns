@@ -2,6 +2,315 @@
 
 This document outlines potential enhancements and improvements to the SharedAssigns library. These are ideas for future development that could enhance performance, developer experience, and functionality.
 
+## Unified Event-Driven Architecture
+
+### The Current Problem
+The library currently has two separate consumption patterns:
+- **Consumer**: Uses explicit assigns + `send_update/3` for LiveComponents
+- **PubSub Consumer**: Uses PubSub messages for nested LiveViews
+
+This creates conceptual complexity and API inconsistency. Developers must understand different approaches for what is fundamentally the same concept: "subscribe to context changes."
+
+### Proposed Solution: Single Unified Consumer
+
+Replace both patterns with a unified event-driven architecture that works seamlessly for all component types.
+
+#### Single Consumer Interface
+```elixir
+# Works for BOTH LiveComponents AND LiveViews
+defmodule MyComponent do
+  use Phoenix.LiveComponent
+  use SharedAssigns.Consumer, contexts: [:theme, :user]
+end
+
+defmodule MyLiveView do
+  use Phoenix.LiveView
+  use SharedAssigns.Consumer, contexts: [:theme, :user]
+end
+```
+
+#### Internal Event System
+All context changes become events, with smart routing based on consumer type:
+
+```elixir
+# Provider emits unified events
+put_context(socket, :theme, "dark")
+# Internally: emit_event({:context_changed, :theme, "dark"})
+
+# Library routes events automatically:
+# - LiveComponent in same process → send_update/3
+# - LiveView in different process → PubSub broadcast
+# - Future: WebSocket, EventBus, etc.
+```
+
+### Implementation Strategy
+
+#### Phase 1: Event Layer Foundation
+```elixir
+defmodule SharedAssigns.Events do
+  @doc "Emit context change events with automatic routing"
+  def emit(socket, context_key, value) do
+    event = %{
+      type: :context_changed,
+      key: context_key,
+      value: value,
+      timestamp: DateTime.utc_now(),
+      source_pid: self()
+    }
+    
+    notify_all_subscribers(socket, event)
+  end
+  
+  defp notify_all_subscribers(socket, event) do
+    subscribers = get_subscribers(socket, event.key)
+    
+    # Route events based on subscriber type and location
+    subscribers
+    |> Enum.group_by(&subscriber_routing_strategy/1)
+    |> Enum.each(fn {strategy, subs} -> 
+         route_events(strategy, subs, event) 
+       end)
+  end
+  
+  defp subscriber_routing_strategy(subscriber) do
+    cond do
+      same_process?(subscriber) && component?(subscriber) -> :send_update
+      same_process?(subscriber) && liveview?(subscriber) -> :direct_message
+      different_process?(subscriber) -> :pubsub
+      true -> :fallback
+    end
+  end
+end
+```
+
+#### Phase 2: Unified Consumer API
+```elixir
+defmodule SharedAssigns.Consumer do
+  defmacro __using__(opts) do
+    contexts = Keyword.get(opts, :contexts, [])
+    
+    quote do
+      @shared_assigns_contexts unquote(contexts)
+      
+      # Auto-detect consumer type and set up appropriate handlers
+      @before_compile SharedAssigns.Consumer
+      
+      # Import unified helpers
+      import SharedAssigns.Helpers, only: [sa_live_component: 1]
+    end
+  end
+  
+  defmacro __before_compile__(env) do
+    consumer_type = detect_consumer_type(env.module)
+    
+    case consumer_type do
+      :live_component -> generate_component_handlers()
+      :live_view -> generate_liveview_handlers()
+    end
+  end
+  
+  defp detect_consumer_type(module) do
+    cond do
+      function_exported?(module, :render, 1) && 
+      function_exported?(module, :update, 2) -> :live_component
+      
+      function_exported?(module, :render, 1) && 
+      function_exported?(module, :mount, 3) -> :live_view
+      
+      true -> :unknown
+    end
+  end
+end
+```
+
+#### Phase 3: Smart Event Routing
+```elixir
+defmodule SharedAssigns.Router do
+  @doc "Route events to consumers using optimal delivery mechanism"
+  def route_event(event, subscribers) do
+    subscribers
+    |> Enum.group_by(&routing_strategy/1)
+    |> Enum.each(&deliver_events/1)
+  end
+  
+  defp routing_strategy(%{type: :component, parent_pid: parent_pid}) do
+    if parent_pid == self() do
+      :send_update  # Same process - use send_update/3
+    else
+      :cross_process_component  # Different process - PubSub to parent
+    end
+  end
+  
+  defp routing_strategy(%{type: :liveview, pid: pid}) do
+    if pid == self() do
+      :direct_message  # Same process - direct message
+    else
+      :pubsub  # Different process - PubSub
+    end
+  end
+  
+  defp deliver_events({:send_update, components}, event) do
+    Enum.each(components, fn comp ->
+      Phoenix.LiveView.send_update(comp.module, 
+        id: comp.id, 
+        comp.context_key => event.value
+      )
+    end)
+  end
+  
+  defp deliver_events({:pubsub, consumers}, event) do
+    Phoenix.PubSub.broadcast(MyApp.PubSub, 
+      "shared_assigns:context_changes", 
+      event
+    )
+  end
+end
+```
+
+### Advanced Features Enabled
+
+#### Event Middleware Pipeline
+```elixir
+use SharedAssigns.Consumer,
+  contexts: [:theme, :user],
+  middleware: [
+    SharedAssigns.Middleware.Validate,    # Validate events
+    SharedAssigns.Middleware.Transform,   # Transform values
+    SharedAssigns.Middleware.Log,         # Log changes
+    SharedAssigns.Middleware.Debounce     # Prevent spam
+  ]
+
+defmodule SharedAssigns.Middleware.Debounce do
+  def process_event(event, %{last_event_time: last_time} = state) do
+    if DateTime.diff(event.timestamp, last_time, :millisecond) > 100 do
+      {:continue, event, %{state | last_event_time: event.timestamp}}
+    else
+      {:skip, %{state | last_event_time: event.timestamp}}
+    end
+  end
+end
+```
+
+#### Cross-Process Event Batching
+```elixir
+# Automatically batch rapid context changes
+put_context(socket, :theme, "dark")
+put_context(socket, :user, new_user)
+put_context(socket, :notifications, [])
+
+# All delivered as single batched event:
+# %{type: :batch_context_changed, changes: %{theme: "dark", user: ..., notifications: []}}
+```
+
+#### Event Filtering and Transformation
+```elixir
+defmodule MyComponent do
+  use SharedAssigns.Consumer, contexts: [:theme, :user]
+  
+  # Only receive theme events for specific values
+  def should_receive_event?(:theme, "dark"), do: true
+  def should_receive_event?(:theme, _), do: false
+  
+  # Transform user events before processing
+  def transform_event(:user, user_data) do
+    %{name: user_data.name, initials: get_initials(user_data)}
+  end
+end
+```
+
+#### Event History and Debugging
+```elixir
+# Built-in event history for debugging
+def handle_info({:debug_contexts}, socket) do
+  history = SharedAssigns.get_event_history(socket)
+  IO.inspect(history, label: "Context Event History")
+  {:noreply, socket}
+end
+
+# Event history format:
+# [
+#   %{timestamp: ~U[...], type: :context_changed, key: :theme, value: "dark"},
+#   %{timestamp: ~U[...], type: :context_changed, key: :user, value: %{...}},
+#   %{timestamp: ~U[...], type: :batch_context_changed, changes: %{...}}
+# ]
+```
+
+### Benefits of Unified Architecture
+
+#### 1. Conceptual Simplicity
+- **One way to consume contexts** regardless of component type
+- **Consistent API** across LiveComponents and LiveViews
+- **No mental overhead** deciding between Consumer vs PubSub Consumer
+
+#### 2. Implementation Flexibility
+- **Automatic optimization** - library chooses best delivery mechanism
+- **Future-proof** - easy to add new delivery methods (WebSockets, etc.)
+- **Performance tuning** - can optimize routing strategies independently
+
+#### 3. Enhanced Debugging
+- **Unified event stream** makes debugging easier
+- **Event history** for time-travel debugging
+- **Performance metrics** across all event types
+
+#### 4. Advanced Capabilities
+- **Middleware system** for cross-cutting concerns
+- **Event filtering** for fine-grained subscriptions
+- **Automatic batching** for performance
+- **Event sourcing** patterns
+
+### Migration Path
+
+#### Backward Compatibility
+```elixir
+# Phase 1: Keep existing APIs working
+use SharedAssigns.Consumer, contexts: [:theme]  # Old API still works
+use SharedAssigns.Consumer.Legacy, contexts: [:theme]  # Explicit legacy
+
+# Phase 2: Introduce unified Consumer
+use SharedAssigns.Consumer, contexts: [:theme]  # New unified API
+
+# Phase 3: Deprecate old APIs with clear migration path
+```
+
+#### Gradual Migration
+1. **Implement event system** internally while keeping current APIs
+2. **Add unified Consumer** as optional alternative
+3. **Migrate examples** and documentation to new approach
+4. **Deprecate separate APIs** with clear migration guides
+5. **Remove legacy code** in major version bump
+
+### Implementation Considerations
+
+#### Performance Implications
+- **Event overhead**: Need to ensure events aren't slower than direct calls
+- **Memory usage**: Event history and routing tables consume memory
+- **Batching strategy**: Balance between latency and efficiency
+
+#### Error Handling
+- **Event delivery failures**: What happens if PubSub is down?
+- **Consumer crashes**: How to handle subscriber process crashes?
+- **Event ordering**: Ensure events arrive in correct order
+
+#### DevTools Integration
+- **Event visualization**: Show event flow in real-time
+- **Performance monitoring**: Track event delivery times
+- **Debug tools**: Event replay, filtering, search
+
+### Priority Assessment
+
+**High Priority Benefits:**
+- Eliminates major conceptual complexity
+- Enables powerful debugging and middleware features
+- Future-proofs the architecture
+
+**Implementation Complexity:**
+- Moderate to high - requires careful design of event system
+- Need to maintain backward compatibility
+- Performance optimization required
+
+**Recommendation:**
+This should be a **major version feature** (v2.0) due to its architectural significance, implemented with careful attention to backward compatibility and migration path.
+
 ## Performance Optimizations
 
 ### 1. Batched Updates
@@ -26,8 +335,7 @@ batch_update_contexts(socket, %{
 
 # Or automatic batching within a single function
 def handle_event("setup_user", _params, socket) do
-  socket = 
-    socket
+  socket
     |> put_context(:theme, "dark")
     |> put_context(:user_role, "admin")
     |> put_context(:notifications, [])

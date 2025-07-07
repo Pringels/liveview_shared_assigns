@@ -172,14 +172,6 @@ defmodule SharedAssigns.Provider do
 
       # Private function to send updates to consuming components
       defp send_component_updates(socket, context_key, value) do
-        IO.inspect(
-          %{
-            sending_updates_for: context_key,
-            new_value: value
-          },
-          label: "Provider sending component updates"
-        )
-
         # Send updates to well-known component IDs based on naming convention
         send_update_to_known_components(socket, context_key)
       end
@@ -201,16 +193,6 @@ defmodule SharedAssigns.Provider do
             Enum.each(component_ids, fn component_id ->
               component_assigns = build_component_assigns(socket, subscribed_contexts)
               component_assigns = Map.put(component_assigns, :id, component_id)
-
-              IO.inspect(
-                %{
-                  sending_to: component_module,
-                  component_id: component_id,
-                  assigns: component_assigns
-                },
-                label: "Sending update"
-              )
-
               # Send update to the component
               Phoenix.LiveView.send_update(component_module, component_assigns)
             end)

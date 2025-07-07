@@ -1,5 +1,5 @@
 {application,demo,
-             [{config_mtime,1751892881},
+             [{config_mtime,1751917725},
               {optional_applications,[]},
               {applications,[kernel,stdlib,elixir,logger,phoenix,phoenix_html,
                              phoenix_live_view,phoenix_live_reload,

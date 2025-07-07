@@ -30,7 +30,9 @@ defmodule Demo.MixProject do
       {:telemetry_metrics, "~> 0.6"},
       {:telemetry_poller, "~> 1.2"},
       {:jason, "~> 1.2"},
-      {:shared_assigns, path: ".."}
+      {:shared_assigns, path: ".."},
+      {:wallaby, "~> 0.30", only: :test},
+      {:floki, ">= 0.30.0", only: :test}
     ]
   end
 end

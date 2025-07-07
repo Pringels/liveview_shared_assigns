@@ -7,20 +7,6 @@ defmodule DemoWeb.Components.CounterDisplayComponent do
   # Declare which contexts this component subscribes to
   def subscribed_contexts, do: [:counter, :theme]
 
-  def update(assigns, socket) do
-    IO.inspect(
-      %{
-        component: __MODULE__,
-        counter: assigns[:counter],
-        theme: assigns[:theme],
-        version_key: assigns[:__sa_version_key]
-      },
-      label: "CounterDisplayComponent.update"
-    )
-
-    {:ok, assign(socket, assigns)}
-  end
-
   def render(assigns) do
     ~H"""
     <div class={[
