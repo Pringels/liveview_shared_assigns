@@ -62,6 +62,19 @@ defmodule SharedAssigns.PubSubConsumer do
             end)
           end)
 
+        # Request initial values from any providers after subscribing
+        Enum.each(@shared_assigns_consumer_contexts, fn key ->
+          Phoenix.PubSub.broadcast(
+            @shared_assigns_pubsub,
+            "shared_assigns:#{key}:request_initial",
+            {
+              :request_initial_value,
+              key,
+              self()
+            }
+          )
+        end)
+
         {:ok, socket}
       end
 
@@ -83,6 +96,22 @@ defmodule SharedAssigns.PubSubConsumer do
           else
             {:noreply, socket}
           end
+        else
+          {:noreply, socket}
+        end
+      end
+
+      def handle_info({:initial_value, key, value, version}, socket) do
+        # Handle initial value responses from providers
+        if key in @shared_assigns_consumer_contexts do
+          new_versions = Map.put(socket.assigns.__subscribed_context_versions__, key, version)
+
+          socket =
+            socket
+            |> Phoenix.Component.assign(:__subscribed_context_versions__, new_versions)
+            |> Phoenix.Component.assign(key, value)
+
+          {:noreply, socket}
         else
           {:noreply, socket}
         end
