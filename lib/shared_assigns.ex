@@ -6,6 +6,8 @@ defmodule SharedAssigns do
   and updating contexts that are used by Provider and Consumer modules.
   """
 
+  import Phoenix.Component, only: [assign: 3]
+
   @doc """
   Initializes contexts in a LiveView socket with default values and version tracking.
   """
@@ -21,11 +23,11 @@ defmodule SharedAssigns do
       |> Enum.into(%{})
 
     socket
-    |> Phoenix.Component.assign(:__shared_assigns_contexts__, context_assigns)
-    |> Phoenix.Component.assign(:__shared_assigns_versions__, context_versions)
+    |> assign(:__shared_assigns_contexts__, context_assigns)
+    |> assign(:__shared_assigns_versions__, context_versions)
     |> then(fn sock ->
       Enum.reduce(context_assigns, sock, fn {key, value}, acc ->
-        Phoenix.Component.assign(acc, key, value)
+        assign(acc, key, value)
       end)
     end)
   end
@@ -34,14 +36,16 @@ defmodule SharedAssigns do
   Gets the current value of a context.
   """
   def get_context(socket, key) do
-    Map.get(socket.assigns.__shared_assigns_contexts__, key)
+    contexts = Map.get(socket.assigns, :__shared_assigns_contexts__, %{})
+    Map.get(contexts, key)
   end
 
   @doc """
   Gets the current version of a context.
   """
   def get_context_version(socket, key) do
-    Map.get(socket.assigns.__shared_assigns_versions__, key, 0)
+    versions = Map.get(socket.assigns, :__shared_assigns_versions__, %{})
+    Map.get(versions, key, 0)
   end
 
   @doc """
@@ -51,13 +55,16 @@ defmodule SharedAssigns do
     current_version = get_context_version(socket, key)
     new_version = current_version + 1
 
-    new_contexts = Map.put(socket.assigns.__shared_assigns_contexts__, key, value)
-    new_versions = Map.put(socket.assigns.__shared_assigns_versions__, key, new_version)
+    current_contexts = Map.get(socket.assigns, :__shared_assigns_contexts__, %{})
+    current_versions = Map.get(socket.assigns, :__shared_assigns_versions__, %{})
+
+    new_contexts = Map.put(current_contexts, key, value)
+    new_versions = Map.put(current_versions, key, new_version)
 
     socket
-    |> Phoenix.Component.assign(:__shared_assigns_contexts__, new_contexts)
-    |> Phoenix.Component.assign(:__shared_assigns_versions__, new_versions)
-    |> Phoenix.Component.assign(key, value)
+    |> assign(:__shared_assigns_contexts__, new_contexts)
+    |> assign(:__shared_assigns_versions__, new_versions)
+    |> assign(key, value)
   end
 
   @doc """
@@ -73,28 +80,29 @@ defmodule SharedAssigns do
   Returns all available context keys for the given socket.
   """
   def context_keys(socket) do
-    Map.keys(socket.assigns.__shared_assigns_contexts__)
+    contexts = Map.get(socket.assigns, :__shared_assigns_contexts__, %{})
+    Map.keys(contexts)
   end
 
   @doc """
   Returns all current context values as a map.
   """
   def all_contexts(socket) do
-    socket.assigns.__shared_assigns_contexts__
+    Map.get(socket.assigns, :__shared_assigns_contexts__, %{})
   end
 
   @doc """
   Returns all current context versions as a map.
   """
   def all_context_versions(socket) do
-    socket.assigns.__shared_assigns_versions__
+    Map.get(socket.assigns, :__shared_assigns_versions__, %{})
   end
 
   @doc """
   Extracts specific context values from the socket.
   """
   def extract_contexts(socket, keys) do
-    contexts = socket.assigns.__shared_assigns_contexts__
+    contexts = Map.get(socket.assigns, :__shared_assigns_contexts__, %{})
 
     keys
     |> Enum.map(fn key -> {key, Map.get(contexts, key)} end)

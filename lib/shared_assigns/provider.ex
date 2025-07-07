@@ -31,17 +31,39 @@ defmodule SharedAssigns.Provider do
 
       # Import the seamless component helpers
       import SharedAssigns.Helpers, only: [sa_component: 1]
-
-      def mount(params, session, socket) do
-        socket = SharedAssigns.initialize_contexts(socket, @shared_assigns_contexts)
-        {:ok, socket}
-      end
-
-      defoverridable mount: 3
     end
   end
 
-  defmacro __before_compile__(_env) do
+  defmacro __before_compile__(env) do
+    # Check if the module already defines mount/3
+    has_mount = Module.defines?(env.module, {:mount, 3})
+
+    if has_mount do
+      # If mount/3 exists, wrap it with context initialization
+      quote do
+        defoverridable mount: 3
+
+        def mount(params, session, socket) do
+          socket = SharedAssigns.initialize_contexts(socket, @shared_assigns_contexts)
+          super(params, session, socket)
+        end
+
+        unquote(generate_helper_functions())
+      end
+    else
+      # If no mount/3 exists, create a default one
+      quote do
+        def mount(_params, _session, socket) do
+          socket = SharedAssigns.initialize_contexts(socket, @shared_assigns_contexts)
+          {:ok, socket}
+        end
+
+        unquote(generate_helper_functions())
+      end
+    end
+  end
+
+  defp generate_helper_functions do
     quote do
       @doc """
       Puts a context value, triggering re-renders for consumers of this context.
@@ -78,19 +100,5 @@ defmodule SharedAssigns.Provider do
         Keyword.keys(@shared_assigns_contexts)
       end
     end
-  end
-
-  @doc """
-  Helper function for putting context values from within the provider LiveView.
-  """
-  def put_context(socket, key, value) do
-    SharedAssigns.put_context(socket, key, value)
-  end
-
-  @doc """
-  Helper function for updating context values from within the provider LiveView.
-  """
-  def update_context(socket, key, fun) do
-    SharedAssigns.update_context(socket, key, fun)
   end
 end

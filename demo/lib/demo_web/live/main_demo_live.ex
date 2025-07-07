@@ -12,6 +12,8 @@ defmodule DemoWeb.MainDemoLive do
     ]
 
   def mount(_params, _session, socket) do
+    # Context initialization happens automatically via the Provider macro
+    # Add any additional setup here if needed
     {:ok, socket}
   end
 
@@ -38,19 +40,20 @@ defmodule DemoWeb.MainDemoLive do
     ~H"""
     <div class={[
       "min-h-screen transition-colors duration-300",
-      @theme == "dark" && "bg-gray-900 text-white" || "bg-gray-50 text-gray-900"
+      (@theme || "light") == "dark" && "bg-gray-900 text-white" || "bg-gray-50 text-gray-900"
     ]}>
       <!-- Header Component with seamless SharedAssigns -->
       <.sa_component
         module={DemoWeb.Components.HeaderComponent}
         id="header"
+        socket={@socket}
       />
 
       <div class="max-w-4xl mx-auto p-6">
         <!-- Context Controls -->
         <div class={[
           "bg-white rounded-lg shadow-md p-6 mb-6",
-          @theme == "dark" && "bg-gray-800"
+          (@theme || "light") == "dark" && "bg-gray-800"
         ]}>
           <h2 class="text-2xl font-bold mb-4">Context Controls</h2>
 
@@ -62,9 +65,9 @@ defmodule DemoWeb.MainDemoLive do
                 phx-click="toggle_theme"
                 class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors"
               >
-                Switch to {get_context(@socket, :theme) == "light" && "Dark" || "Light"}
+                Switch to {(@theme || "light") == "light" && "Dark" || "Light"}
               </button>
-              <p class="text-sm text-gray-500 mt-1">Current: {get_context(@socket, :theme)}</p>
+              <p class="text-sm text-gray-500 mt-1">Current: {@theme || "light"}</p>
             </div>
 
             <!-- User Control -->
@@ -75,22 +78,22 @@ defmodule DemoWeb.MainDemoLive do
                   type="text"
                   name="name"
                   placeholder="Name"
-                  value={get_context(@socket, :user).name}
+                  value={Map.get(@user || %{}, :name, "")}
                   class={[
                     "w-full px-3 py-1 border rounded-md",
-                    @theme == "dark" && "bg-gray-700 border-gray-600 text-white" || "bg-white border-gray-300"
+                    (@theme || "light") == "dark" && "bg-gray-700 border-gray-600 text-white" || "bg-white border-gray-300"
                   ]}
                 />
                 <select
                   name="role"
                   class={[
                     "w-full px-3 py-1 border rounded-md",
-                    @theme == "dark" && "bg-gray-700 border-gray-600 text-white" || "bg-white border-gray-300"
+                    (@theme || "light") == "dark" && "bg-gray-700 border-gray-600 text-white" || "bg-white border-gray-300"
                   ]}
                 >
-                  <option value="guest" selected={get_context(@socket, :user).role == "guest"}>Guest</option>
-                  <option value="user" selected={get_context(@socket, :user).role == "user"}>User</option>
-                  <option value="admin" selected={get_context(@socket, :user).role == "admin"}>Admin</option>
+                  <option value="guest" selected={Map.get(@user || %{}, :role, "guest") == "guest"}>Guest</option>
+                  <option value="user" selected={Map.get(@user || %{}, :role, "guest") == "user"}>User</option>
+                  <option value="admin" selected={Map.get(@user || %{}, :role, "guest") == "admin"}>Admin</option>
                 </select>
               </form>
             </div>
@@ -105,7 +108,7 @@ defmodule DemoWeb.MainDemoLive do
                 >
                   -
                 </button>
-                <span class="font-mono text-lg">{get_context(@socket, :counter)}</span>
+                <span class="font-mono text-lg">{@counter || 0}</span>
                 <button
                   phx-click="increment"
                   class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded-md"
@@ -123,19 +126,21 @@ defmodule DemoWeb.MainDemoLive do
           <.sa_component
             module={DemoWeb.Components.UserInfoComponent}
             id="user-info"
+            socket={@socket}
           />
 
           <!-- Counter Display Component -->
           <.sa_component
             module={DemoWeb.Components.CounterDisplayComponent}
             id="counter-display"
+            socket={@socket}
           />
         </div>
 
         <!-- Child LiveView Demo -->
         <div class={[
           "bg-blue-50 border-2 border-blue-200 rounded-lg p-6",
-          @theme == "dark" && "bg-blue-900 border-blue-700"
+          (@theme || "light") == "dark" && "bg-blue-900 border-blue-700"
         ]}>
           <h2 class="text-xl font-bold mb-4">Nested LiveView Demo</h2>
           <p class="mb-4">This section is a separate LiveView that receives contexts from the parent:</p>
@@ -143,8 +148,12 @@ defmodule DemoWeb.MainDemoLive do
           <%= live_render(@socket, DemoWeb.ChildDemoLive,
                 id: "child-demo",
                 session: %{
-                  "parent_contexts" => SharedAssigns.extract_contexts(@socket, [:theme, :user, :counter]),
-                  "parent_versions" => @__shared_assigns_versions__
+                  "parent_contexts" => %{
+                    theme: @theme || "light",
+                    user: @user || %{name: "Guest", role: "guest"},
+                    counter: @counter || 0
+                  },
+                  "parent_versions" => Map.get(assigns, :__shared_assigns_versions__, %{})
                 }
               ) %>
         </div>

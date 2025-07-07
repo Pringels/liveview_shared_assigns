@@ -1,50 +1,66 @@
-# SharedAssigns Demo
+# SharedAssigns Demo - Live Browser Demo
 
-A simple, clean demonstration of the SharedAssigns library for Phoenix LiveView.
+A complete, runnable Phoenix LiveView application demonstrating SharedAssigns functionality.
 
-## What This Demo Shows
+## 🚀 Quick Start
 
-### 🏗️ Context Provider (Root LiveView)
-- **File**: `lib/demo_web/live/main_demo_live.ex`
-- Sets up three simple contexts:
-  - `theme`: "light" or "dark"
-  - `user`: `%{name: string, role: string}`
-  - `counter`: integer
+### Option 1: Automated Start Script
+```bash
+# From the project root
+./start_demo.sh
+```
 
-### 📦 Context Consumers (Components)
-- **HeaderComponent**: Consumes `theme` + `user` contexts
-- **UserInfoComponent**: Consumes `user` + `theme` contexts  
-- **CounterDisplayComponent**: Consumes `counter` + `theme` contexts
+### Option 2: Manual Setup
+```bash
+# Navigate to demo directory
+cd demo
 
-### 🔄 Nested LiveView
-- **ChildDemoLive**: Demonstrates how child LiveViews can receive contexts from parents
-- Shows read-only context consumption
-- Maintains its own local state alongside parent contexts
+# Install dependencies
+mix deps.get
 
-## Key Features Demonstrated
+# Start the Phoenix server
+mix phx.server
+```
 
-✅ **Context Provider Setup** - Simple context initialization in root LiveView  
-✅ **Granular Subscriptions** - Components only subscribe to contexts they need  
-✅ **Automatic Re-rendering** - Only components using changed contexts update  
-✅ **Nested LiveViews** - Child LiveViews can consume parent contexts  
-✅ **Theme Switching** - Real-time UI updates across all components  
-✅ **Role-based Content** - Conditional rendering based on user context  
+Then visit **http://localhost:4000** in your browser!
 
-## How to Use
+## 🎯 What You'll See
 
-1. **Toggle Theme**: Watch all components update their styling instantly
-2. **Change User**: See role-based content appear/disappear across components
-3. **Increment/Decrement Counter**: Observe only the counter component re-renders
-4. **Update Child Message**: Local state in child LiveView works alongside parent contexts
+### ✨ Seamless Context Management
+- **Clean Component Usage**: Notice how components use `<.sa_component module={...} socket={@socket} />` instead of manual context passing
+- **Automatic Context Injection**: SharedAssigns automatically detects what contexts each component needs
+- **No Boilerplate**: No more `extract_contexts()` helper functions or manual `__parent_contexts__` passing
 
-## Architecture
+### 🔄 Real-Time Updates
+- **Theme Toggle**: Watch all components instantly update their styling when you switch themes
+- **User Role Changes**: See role-based content appear/disappear across all components  
+- **Counter Updates**: Observe that only the counter component re-renders when counter changes
+- **Nested LiveView**: Child LiveView automatically receives and reacts to parent context changes
 
+### 📦 Component Architecture
 ```
 MainDemoLive (Provider)
-├── HeaderComponent (Consumer: theme, user)
-├── UserInfoComponent (Consumer: user, theme)
-├── CounterDisplayComponent (Consumer: counter, theme)
+├── HeaderComponent (Consumes: theme, user)
+├── UserInfoComponent (Consumes: user, theme)  
+├── CounterDisplayComponent (Consumes: counter, theme)
 └── ChildDemoLive (Receives: theme, user, counter)
 ```
 
-This demonstrates the core SharedAssigns pattern: **declarative context management with granular reactivity**.
+## 🔍 Key Demo Features
+
+✅ **Context Provider Setup** - Root LiveView managing 3 simple contexts  
+✅ **Granular Subscriptions** - Each component only gets contexts it needs  
+✅ **Seamless Integration** - Clean, React-like component usage  
+✅ **Automatic Re-rendering** - Only affected components update  
+✅ **Nested LiveViews** - Child LiveViews receive parent contexts  
+✅ **Beautiful UI** - Tailwind CSS styling with dark/light theme switching  
+
+## 🎨 Interactive Elements
+
+1. **Theme Toggle** - Switch between light/dark modes
+2. **User Management** - Change name and role (guest/user/admin)  
+3. **Counter Controls** - Increment/decrement with visual feedback
+4. **Role-Based Content** - Admin/user panels that appear based on role
+5. **Child LiveView** - Shows context consumption in nested LiveViews
+
+This demonstrates the power of **SharedAssigns**: React Context-like functionality for Phoenix LiveView with zero boilerplate!

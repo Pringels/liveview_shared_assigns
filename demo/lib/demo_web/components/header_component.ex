@@ -9,7 +9,7 @@ defmodule DemoWeb.Components.HeaderComponent do
     ~H"""
     <header class={[
       "shadow-md p-4 mb-6",
-      @theme == "dark" && "bg-gray-800 text-white" || "bg-white text-gray-900"
+      (@theme || "light") == "dark" && "bg-gray-800 text-white" || "bg-white text-gray-900"
     ]}>
       <div class="max-w-4xl mx-auto flex justify-between items-center">
         <div>
@@ -20,20 +20,20 @@ defmodule DemoWeb.Components.HeaderComponent do
         <div class="flex items-center space-x-4">
           <div class={[
             "flex items-center space-x-2 px-3 py-1 rounded-full text-sm",
-            case @user.role do
+            case Map.get(@user || %{}, :role, "guest") do
               "admin" -> "bg-yellow-100 text-yellow-800"
               "user" -> "bg-green-100 text-green-800"
               _ -> "bg-gray-100 text-gray-800"
             end
           ]}>
             <span>
-              <%= case @user.role do %>
+              <%= case Map.get(@user || %{}, :role, "guest") do %>
                 <% "admin" -> %> 👑
                 <% "user" -> %> 👤
                 <% _ -> %> 👋
               <% end %>
             </span>
-            <span>{@user.name}</span>
+            <span>{Map.get(@user || %{}, :name, "Unknown")}</span>
           </div>
 
           <div class={[
