@@ -16,11 +16,10 @@ defmodule SharedAssignsDemoWeb.PageLive do
       user_role: SharedAssigns.get_context(socket, :user_role) || "guest",
       sidebar_open: SharedAssigns.get_context(socket, :sidebar_open) || false
     }
-    
+
     socket = Phoenix.Component.assign(socket, :contexts, contexts)
-    
+
     {:ok, socket}
-  end
   end
 
   def handle_event("toggle_theme", _params, socket) do
