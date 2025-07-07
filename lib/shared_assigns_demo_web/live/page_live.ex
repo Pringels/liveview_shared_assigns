@@ -58,21 +58,21 @@ defmodule SharedAssignsDemoWeb.PageLive do
     {:noreply, socket}
   end
 
-  def handle_info({:toggle_theme}, socket) do\
-    current_theme = SharedAssigns.get_context(socket, :theme) || "light"\
-    new_theme = if current_theme == "light", do: "dark", else: "light"\
-\
-    socket = put_context(socket, :theme, new_theme)\
-\
-    socket =\
-      Phoenix.Component.assign(\
-        socket,\
-        :contexts,\
-        Map.put(socket.assigns.contexts, :theme, new_theme)\
-      )\
-\
-    {:noreply, socket}\
-  end\
+  def handle_info({:toggle_theme}, socket) do
+    current_theme = SharedAssigns.get_context(socket, :theme) || "light"
+    new_theme = if current_theme == "light", do: "dark", else: "light"
+
+    socket = put_context(socket, :theme, new_theme)
+
+    socket =
+      Phoenix.Component.assign(
+        socket,
+        :contexts,
+        Map.put(socket.assigns.contexts, :theme, new_theme)
+      )
+
+    {:noreply, socket}
+  end
 
   def handle_event("toggle_sidebar", _params, socket) do
     current_sidebar = SharedAssigns.get_context(socket, :sidebar_open) || false
