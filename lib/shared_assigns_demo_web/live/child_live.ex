@@ -12,7 +12,7 @@ defmodule SharedAssignsDemoWeb.ChildLive do
         <div class="p-4 bg-white rounded-lg border border-purple-200">
           <h3 class="font-medium text-gray-700 mb-2">Theme Context</h3>
           <p class="text-lg font-semibold text-blue-600" id="child-theme">
-            {@theme || "Not received yet"}
+            <%= @theme || "Not received yet" %>
           </p>
           <p class="text-xs text-gray-500 mt-1">
             Via PubSub from parent LiveView
@@ -21,7 +21,7 @@ defmodule SharedAssignsDemoWeb.ChildLive do
         <div class="p-4 bg-white rounded-lg border border-purple-200">
           <h3 class="font-medium text-gray-700 mb-2">User Role Context</h3>
           <p class="text-lg font-semibold text-green-600" id="child-role">
-            {@user_role || "Not received yet"}
+            <%= @user_role || "Not received yet" %>
           </p>
           <p class="text-xs text-gray-500 mt-1">
             Via PubSub from parent LiveView
