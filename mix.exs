@@ -1,86 +1,65 @@
-defmodule SharedAssignsDemo.MixProject do
+defmodule SharedAssigns.MixProject do
   use Mix.Project
+
+  @version "0.1.0"
+  @source_url "https://github.com/your-org/shared_assigns"
 
   def project do
     [
-      app: :shared_assigns_demo,
-      version: "0.1.0",
+      app: :shared_assigns,
+      version: @version,
       elixir: "~> 1.14",
-      elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
-      aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+      description: description(),
+      package: package(),
+      docs: docs(),
+      name: "SharedAssigns",
+      source_url: @source_url
     ]
   end
 
-  # Configuration for the OTP application.
-  #
-  # Type `mix help compile.app` for more information.
   def application do
     [
-      mod: {SharedAssignsDemo.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger]
     ]
   end
 
-  # Specifies which paths to compile per environment.
-  defp elixirc_paths(:test), do: ["lib", "test/support"]
-  defp elixirc_paths(_), do: ["lib"]
-
-  # Specifies your project dependencies.
-  #
-  # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:shared_assigns, path: "./shared_assigns"},
-      {:phoenix, "~> 1.7.14"},
-      {:phoenix_ecto, "~> 4.5"},
-      {:ecto_sql, "~> 3.10"},
-      {:ecto_sqlite3, ">= 0.0.0"},
-      {:phoenix_html, "~> 4.1"},
-      {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:phoenix_live_view, "~> 0.20.2"},
-      {:floki, ">= 0.30.0", only: :test},
-      {:phoenix_live_dashboard, "~> 0.8.3"},
-      {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},
-      {:tailwind, "~> 0.2", runtime: Mix.env() == :dev},
-      {:heroicons,
-       github: "tailwindlabs/heroicons",
-       tag: "v2.1.1",
-       sparse: "optimized",
-       app: false,
-       compile: false,
-       depth: 1},
-      {:swoosh, "~> 1.5"},
-      {:finch, "~> 0.13"},
-      {:telemetry_metrics, "~> 1.0"},
-      {:telemetry_poller, "~> 1.0"},
-      {:gettext, "~> 0.20"},
-      {:jason, "~> 1.2"},
-      {:dns_cluster, "~> 0.1.1"},
-      {:bandit, "~> 1.5"}
+      {:phoenix_live_view, "~> 0.20"},
+      {:phoenix, "~> 1.7"},
+      {:ex_doc, "~> 0.31", only: :dev, runtime: false},
+      {:floki, ">= 0.30.0", only: :test}
     ]
   end
 
-  # Aliases are shortcuts or tasks specific to the current project.
-  # For example, to install project dependencies and perform other setup tasks, run:
-  #
-  #     $ mix setup
-  #
-  # See the documentation for `Mix` for more info on aliases.
-  defp aliases do
+  defp description do
+    """
+    A React Context-like library for Phoenix LiveView that eliminates prop drilling
+    by allowing components to subscribe to specific context values and automatically
+    re-render when those contexts change.
+    """
+  end
+
+  defp package do
     [
-      setup: ["deps.get", "ecto.setup", "assets.setup", "assets.build"],
-      "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
-      "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
-      "assets.setup": ["tailwind.install --if-missing", "esbuild.install --if-missing"],
-      "assets.build": ["tailwind shared_assigns_demo", "esbuild shared_assigns_demo"],
-      "assets.deploy": [
-        "tailwind shared_assigns_demo --minify",
-        "esbuild shared_assigns_demo --minify",
-        "phx.digest"
-      ]
+      maintainers: ["Your Name"],
+      licenses: ["MIT"],
+      links: %{
+        "GitHub" => @source_url,
+        "Changelog" => "#{@source_url}/blob/main/CHANGELOG.md"
+      },
+      files: ~w(lib .formatter.exs mix.exs README.md LICENSE CHANGELOG.md)
+    ]
+  end
+
+  defp docs do
+    [
+      main: "SharedAssigns",
+      source_ref: "v#{@version}",
+      source_url: @source_url,
+      extras: ["README.md", "CHANGELOG.md"]
     ]
   end
 end

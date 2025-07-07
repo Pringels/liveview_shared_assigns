@@ -5,90 +5,94 @@ defmodule SharedAssigns.Consumer do
   ## Usage
 
       defmodule MyAppWeb.HeaderComponent do
-        use Phoenix.LiveComponent
-        use SharedAssigns.Consumer, contexts: [:theme]
-
-        # Your component implementation...
-        # @theme will be automatically available in assigns
+        use MyAppWeb, :live_component
+        use SharedAssigns.Consumer, contexts: [:theme, :user_role]
+        
+        # @theme and @user_role will be automatically available in assigns
+        # Component only re-renders when these contexts change
       end
 
   This automatically:
-  - Subscribes to the specified contexts
+  - Subscribes the component to specific context changes
   - Injects context values into component assigns
-  - Only re-renders when subscribed contexts change
+  - Only triggers re-renders when subscribed contexts change
+  - Provides granular reactivity without prop drilling
   """
 
   defmacro __using__(opts) do
     contexts = Keyword.get(opts, :contexts, [])
 
     quote do
-      @shared_assigns_subscribed_contexts unquote(contexts)
+      @shared_assigns_consumer_contexts unquote(contexts)
 
       def mount(socket) do
-        {:ok, socket}
-      end
+        # Extract parent contexts from assigns passed by the LiveView
+        parent_contexts = Map.get(socket.assigns, :__parent_contexts__, %{})
 
-      def update(assigns, socket) do
-        # Extract parent contexts and versions
-        parent_contexts = Map.get(assigns, :__parent_contexts__, %{})
-        versions = Map.get(assigns, :__shared_assigns_versions__, %{})
-
-        # Inject subscribed context values into assigns
+        # Inject subscribed context values into component assigns
         context_assigns =
-          @shared_assigns_subscribed_contexts
-          |> Enum.reduce(%{}, fn context_key, acc ->
-            case Map.get(parent_contexts, context_key) do
-              nil -> acc
-              value -> Map.put(acc, context_key, value)
-            end
+          @shared_assigns_consumer_contexts
+          |> Enum.map(fn key -> {key, Map.get(parent_contexts, key)} end)
+          |> Enum.into(%{})
+
+        socket =
+          Enum.reduce(context_assigns, socket, fn {key, value}, acc ->
+            Phoenix.Component.assign(acc, key, value)
           end)
 
-        # Merge all assigns together
-        socket =
-          socket
-          |> Phoenix.Component.assign(assigns)
-          |> Phoenix.Component.assign(context_assigns)
-
         {:ok, socket}
       end
 
-      defoverridable update: 2
+      def update(_assigns, socket) do
+        # Extract parent contexts and versions for reactivity check
+        parent_contexts = Map.get(socket.assigns, :__parent_contexts__, %{})
+        parent_versions = Map.get(socket.assigns, :__shared_assigns_versions__, %{})
+
+        # Get last known versions for our subscribed contexts
+        last_versions = Map.get(socket.assigns, :__last_context_versions__, %{})
+
+        # Check if any of our subscribed contexts have changed
+        contexts_changed =
+          Enum.any?(@shared_assigns_consumer_contexts, fn key ->
+            current_version = Map.get(parent_versions, key, 0)
+            last_version = Map.get(last_versions, key, 0)
+            current_version > last_version
+          end)
+
+        if contexts_changed do
+          # Update context values in assigns
+          context_assigns =
+            @shared_assigns_consumer_contexts
+            |> Enum.map(fn key -> {key, Map.get(parent_contexts, key)} end)
+            |> Enum.into(%{})
+
+          # Update last known versions
+          new_last_versions =
+            @shared_assigns_consumer_contexts
+            |> Enum.map(fn key -> {key, Map.get(parent_versions, key, 0)} end)
+            |> Enum.into(%{})
+
+          socket =
+            socket
+            |> Phoenix.Component.assign(:__last_context_versions__, new_last_versions)
+            |> then(fn sock ->
+              Enum.reduce(context_assigns, sock, fn {key, value}, acc ->
+                Phoenix.Component.assign(acc, key, value)
+              end)
+            end)
+
+          {:ok, socket}
+        else
+          {:ok, socket}
+        end
+      end
 
       @doc """
-      Returns the contexts this component subscribes to.
+      Returns the context keys this component subscribes to.
       """
       def subscribed_contexts do
-        @shared_assigns_subscribed_contexts
+        @shared_assigns_consumer_contexts
       end
-
-      @doc """
-      Checks if this component should re-render based on context version changes.
-      """
-      def should_update_for_context?(context_key) do
-        context_key in @shared_assigns_subscribed_contexts
-      end
-    end
-  end
-
-  @doc """
-  Helper function to get a context value from a LiveComponent socket.
-  Falls back to parent context if not found in socket assigns.
-  """
-  def get_context(socket_or_assigns, key, default \\ nil)
-
-  def get_context(%Phoenix.LiveView.Socket{assigns: assigns}, key, default) do
-    get_context(assigns, key, default)
-  end
-
-  def get_context(%{} = assigns, key, default) do
-    case Map.get(assigns, key) do
-      nil ->
-        # Fall back to parent contexts
-        parent_contexts = Map.get(assigns, :__parent_contexts__, %{})
-        Map.get(parent_contexts, key, default)
-
-      value ->
-        value
     end
   end
 end

@@ -17,7 +17,7 @@ defmodule SharedAssigns.Provider do
       end
 
   This automatically:
-  - Initializes the contexts in `mount/3` 
+  - Initializes the contexts in `mount/3`
   - Provides helper functions for updating contexts
   - Sets up version tracking for reactivity
   """
@@ -28,6 +28,9 @@ defmodule SharedAssigns.Provider do
     quote do
       @before_compile SharedAssigns.Provider
       @shared_assigns_contexts unquote(contexts)
+
+      # Import the seamless component helpers
+      import SharedAssigns.Helpers, only: [sa_component: 1]
 
       def mount(params, session, socket) do
         socket = SharedAssigns.initialize_contexts(socket, @shared_assigns_contexts)
@@ -59,6 +62,13 @@ defmodule SharedAssigns.Provider do
       """
       def get_context(socket, key) do
         SharedAssigns.get_context(socket, key)
+      end
+
+      @doc """
+      Returns the initial contexts configuration for this provider.
+      """
+      def __shared_assigns_contexts__ do
+        @shared_assigns_contexts
       end
 
       @doc """
