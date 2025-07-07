@@ -36,9 +36,16 @@ defmodule SharedAssigns.PubSubConsumer do
       @shared_assigns_pubsub unquote(pubsub)
 
       def mount(params, session, socket) do
+        require Logger
+
+        Logger.info(
+          "PubSubConsumer mounting and subscribing to contexts: #{inspect(@shared_assigns_consumer_contexts)}"
+        )
+
         # Subscribe to PubSub topics for each context
         Enum.each(@shared_assigns_consumer_contexts, fn key ->
           Phoenix.PubSub.subscribe(@shared_assigns_pubsub, "shared_assigns:#{key}")
+          Logger.info("PubSubConsumer subscribed to: shared_assigns:#{key}")
         end)
 
         # Initialize context values (will be updated when first messages arrive)
@@ -64,6 +71,8 @@ defmodule SharedAssigns.PubSubConsumer do
 
         # Request initial values from any providers after subscribing
         Enum.each(@shared_assigns_consumer_contexts, fn key ->
+          Logger.info("PubSubConsumer requesting initial value for: #{inspect(key)}")
+
           Phoenix.PubSub.broadcast(
             @shared_assigns_pubsub,
             "shared_assigns:#{key}:request_initial",
@@ -73,12 +82,20 @@ defmodule SharedAssigns.PubSubConsumer do
               self()
             }
           )
+
+          Logger.info("PubSubConsumer broadcast initial request for: #{inspect(key)} complete")
         end)
 
         {:ok, socket}
       end
 
       def handle_info({:context_changed, key, value, version}, socket) do
+        require Logger
+
+        Logger.info(
+          "PubSubConsumer received context change: #{inspect(key)} = #{inspect(value)} (version: #{version})"
+        )
+
         # Only update if this context is one we subscribe to
         if key in @shared_assigns_consumer_contexts do
           current_version = Map.get(socket.assigns.__subscribed_context_versions__, key, 0)
@@ -92,16 +109,25 @@ defmodule SharedAssigns.PubSubConsumer do
               |> Phoenix.Component.assign(:__subscribed_context_versions__, new_versions)
               |> Phoenix.Component.assign(key, value)
 
+            Logger.info("PubSubConsumer updated context: #{inspect(key)} = #{inspect(value)}")
             {:noreply, socket}
           else
+            Logger.info("PubSubConsumer ignoring stale context change for: #{inspect(key)}")
             {:noreply, socket}
           end
         else
+          Logger.warning("PubSubConsumer received unknown context: #{inspect(key)}")
           {:noreply, socket}
         end
       end
 
       def handle_info({:initial_value, key, value, version}, socket) do
+        require Logger
+
+        Logger.info(
+          "PubSubConsumer received initial value: #{inspect(key)} = #{inspect(value)} (version: #{version})"
+        )
+
         # Handle initial value responses from providers
         if key in @shared_assigns_consumer_contexts do
           new_versions = Map.put(socket.assigns.__subscribed_context_versions__, key, version)
@@ -111,8 +137,13 @@ defmodule SharedAssigns.PubSubConsumer do
             |> Phoenix.Component.assign(:__subscribed_context_versions__, new_versions)
             |> Phoenix.Component.assign(key, value)
 
+          Logger.info("PubSubConsumer set initial value: #{inspect(key)} = #{inspect(value)}")
           {:noreply, socket}
         else
+          Logger.warning(
+            "PubSubConsumer received initial value for unknown context: #{inspect(key)}"
+          )
+
           {:noreply, socket}
         end
       end
