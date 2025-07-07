@@ -1,3 +1,5 @@
+# !!! WIP - DO NOT USE IN PRODUCTION !!! #
+
 # SharedAssigns
 
 A React Context-like library for Phoenix LiveView that eliminates prop drilling by allowing components to subscribe to specific context values and automatically re-render when those contexts change.
