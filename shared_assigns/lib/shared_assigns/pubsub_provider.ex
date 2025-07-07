@@ -119,15 +119,19 @@ defmodule SharedAssigns.PubSubProvider do
   """
   def broadcast_context_change(pubsub, key, value, version) do
     require Logger
-    Logger.info("Broadcasting context change: #{inspect(key)} = #{inspect(value)} (version: #{version})
-    Logger.info("Broadcast result: #{inspect(result)}")
-    result")
-    result = Phoenix.PubSub.broadcast(pubsub, "shared_assigns:#{key}", {
-      :context_changed,
-      key,
-      value,
-      version
-    })
+
+    Logger.info(
+      "Broadcasting context change: #{inspect(key)} = #{inspect(value)} (version: #{version})"
+    )
+
+    result =
+      Phoenix.PubSub.broadcast(pubsub, "shared_assigns:#{key}", {
+        :context_changed,
+        key,
+        value,
+        version
+      })
+
     Logger.info("Broadcast result: #{inspect(result)}")
     result
   end
