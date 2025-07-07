@@ -41,7 +41,28 @@ defmodule SharedAssigns.PubSubProvider do
 
       def mount(params, session, socket) do
         socket = SharedAssigns.initialize_contexts(socket, @shared_assigns_contexts)
+
+        # Subscribe to initial value requests for all our contexts
+        Enum.each(Keyword.keys(@shared_assigns_contexts), fn key ->
+          Phoenix.PubSub.subscribe(
+            @shared_assigns_pubsub,
+            "shared_assigns:#{key}:request_initial"
+          )
+        end)
+
         {:ok, socket}
+      end
+
+      def handle_info({:request_initial_value, key, requesting_pid}, socket) do
+        # Send the current value to the requesting process
+        if key in Keyword.keys(@shared_assigns_contexts) do
+          current_value = SharedAssigns.get_context(socket, key)
+          current_version = SharedAssigns.get_context_version(socket, key)
+
+          send(requesting_pid, {:initial_value, key, current_value, current_version})
+        end
+
+        {:noreply, socket}
       end
 
       defoverridable mount: 3
