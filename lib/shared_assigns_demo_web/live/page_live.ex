@@ -1,6 +1,5 @@
 defmodule SharedAssignsDemoWeb.PageLive do
   use SharedAssignsDemoWeb, :live_view
-  import SharedAssigns, only: [put_context: 3, get_context: 2]
 
   use SharedAssigns.PubSubProvider,
     contexts: [
@@ -31,10 +30,10 @@ defmodule SharedAssignsDemoWeb.PageLive do
   end
 
   def handle_event("toggle_theme", _params, socket) do
-    current_theme = SharedAssigns.get_context(socket, :theme) || "light"
+    current_theme = SharedAssigns.SharedAssigns.get_context(socket, :theme) || "light"
     new_theme = if current_theme == "light", do: "dark", else: "light"
 
-    socket = put_context(socket, :theme, new_theme)
+    socket = SharedAssigns.put_context(socket, :theme, new_theme)
 
     socket =
       Phoenix.Component.assign(
@@ -47,7 +46,7 @@ defmodule SharedAssignsDemoWeb.PageLive do
   end
 
   def handle_event("change_role", %{"role" => role}, socket) do
-    socket = put_context(socket, :user_role, role)
+    socket = SharedAssigns.put_context(socket, :user_role, role)
 
     socket =
       Phoenix.Component.assign(
@@ -60,10 +59,10 @@ defmodule SharedAssignsDemoWeb.PageLive do
   end
 
   def handle_info({:toggle_theme}, socket) do
-    current_theme = SharedAssigns.get_context(socket, :theme) || "light"
+    current_theme = SharedAssigns.SharedAssigns.get_context(socket, :theme) || "light"
     new_theme = if current_theme == "light", do: "dark", else: "light"
 
-    socket = put_context(socket, :theme, new_theme)
+    socket = SharedAssigns.put_context(socket, :theme, new_theme)
 
     socket =
       Phoenix.Component.assign(
@@ -76,10 +75,10 @@ defmodule SharedAssignsDemoWeb.PageLive do
   end
 
   def handle_event("toggle_sidebar", _params, socket) do
-    current_sidebar = SharedAssigns.get_context(socket, :sidebar_open) || false
+    current_sidebar = SharedAssigns.SharedAssigns.get_context(socket, :sidebar_open) || false
     new_sidebar = !current_sidebar
 
-    socket = put_context(socket, :sidebar_open, new_sidebar)
+    socket = SharedAssigns.put_context(socket, :sidebar_open, new_sidebar)
 
     socket =
       Phoenix.Component.assign(
