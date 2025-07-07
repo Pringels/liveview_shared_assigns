@@ -10,7 +10,17 @@ defmodule SharedAssignsDemoWeb.PageLive do
     pubsub: SharedAssignsDemo.PubSub
 
   def mount(_params, _session, socket) do
+    # Get the contexts from the PubSubProvider's initialization
+    contexts = %{
+      theme: SharedAssigns.get_context(socket, :theme) || "light",
+      user_role: SharedAssigns.get_context(socket, :user_role) || "guest",
+      sidebar_open: SharedAssigns.get_context(socket, :sidebar_open) || false
+    }
+    
+    socket = Phoenix.Component.assign(socket, :contexts, contexts)
+    
     {:ok, socket}
+  end
   end
 
   def handle_event("toggle_theme", _params, socket) do
