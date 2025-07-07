@@ -26,6 +26,8 @@ defmodule SharedAssignsDemoWeb.PageLive do
   end
 
   def handle_event("toggle_theme", _params, socket) do
+    require Logger
+    Logger.info("PageLive: toggle_theme event received")
     current_theme = SharedAssigns.get_context(socket, :theme) || "light"
     new_theme = if current_theme == "light", do: "dark", else: "light"
 
@@ -42,6 +44,8 @@ defmodule SharedAssignsDemoWeb.PageLive do
   end
 
   def handle_event("change_role", %{"role" => role}, socket) do
+    require Logger
+    Logger.info("PageLive: change_role event received with role: #{inspect(role)}")
     socket = put_context(socket, :user_role, role)
 
     socket =
@@ -55,6 +59,8 @@ defmodule SharedAssignsDemoWeb.PageLive do
   end
 
   def handle_info({:toggle_theme}, socket) do
+    require Logger
+    Logger.info("PageLive: handle_info toggle_theme message received")
     current_theme = SharedAssigns.get_context(socket, :theme) || "light"
     new_theme = if current_theme == "light", do: "dark", else: "light"
 
