@@ -27,7 +27,7 @@ defmodule SharedAssigns.MixProject do
 
   defp deps do
     [
-      {:phoenix_live_view, "~> 1.0"},
+      {:phoenix_live_view, "~> 0.20"},
       {:phoenix, "~> 1.7"},
       {:ex_doc, "~> 0.31", only: :dev, runtime: false},
       {:floki, ">= 0.30.0", only: :test}
