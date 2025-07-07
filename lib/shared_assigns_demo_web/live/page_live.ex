@@ -1,5 +1,6 @@
 defmodule SharedAssignsDemoWeb.PageLive do
   use SharedAssignsDemoWeb, :live_view
+  import SharedAssigns, only: [put_context: 3, get_context: 2]
 
   use SharedAssigns.PubSubProvider,
     contexts: [
