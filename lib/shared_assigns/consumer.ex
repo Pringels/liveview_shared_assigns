@@ -1,94 +1,146 @@
 defmodule SharedAssigns.Consumer do
   @moduledoc """
-  Macro for LiveComponents to declare themselves as context consumers.
+  Unified macro for LiveViews and LiveComponents to declare themselves as context consumers.
 
-  ## Usage
+  ## Usage for LiveComponents
 
       defmodule MyAppWeb.HeaderComponent do
-        use Phoenix.LiveComponent
-        use SharedAssigns.Consumer, contexts: [:theme]
+        use MyAppWeb, :live_component
+        use SharedAssigns.Consumer, contexts: [:theme, :user_role]
 
-        # Your component implementation...
-        # @theme will be automatically available in assigns
+        # @theme and @user_role will be automatically available in assigns
+      end
+
+  ## Usage for LiveViews (nested)
+
+      defmodule MyAppWeb.ChildLive do
+        use MyAppWeb, :live_view
+        use SharedAssigns.Consumer,
+          contexts: [:theme, :user_role],
+          pubsub: Demo.PubSub
+
+        # Contexts will be subscribed via PubSub and available in assigns
       end
 
   This automatically:
-  - Subscribes to the specified contexts
-  - Injects context values into component assigns
-  - Only re-renders when subscribed contexts change
+  - For components: Injects context values into component assigns
+  - For LiveViews: Subscribes to context changes and handles updates
   """
 
   defmacro __using__(opts) do
     contexts = Keyword.get(opts, :contexts, [])
+    pubsub = Keyword.get(opts, :pubsub)
 
-    quote do
-      @shared_assigns_subscribed_contexts unquote(contexts)
-
-      def mount(socket) do
-        {:ok, socket}
+    if pubsub do
+      # This is a LiveView that wants PubSub subscriptions
+      quote do
+        @before_compile SharedAssigns.Consumer
+        @shared_assigns_consumer_contexts unquote(contexts)
+        @shared_assigns_pubsub unquote(pubsub)
       end
+    else
+      # This is a LiveComponent (default behavior)
+      quote do
+        @before_compile SharedAssigns.Consumer.Component
+        @shared_assigns_consumer_contexts unquote(contexts)
 
-      def update(assigns, socket) do
-        # Extract parent contexts and versions
-        parent_contexts = Map.get(assigns, :__parent_contexts__, %{})
-        versions = Map.get(assigns, :__shared_assigns_versions__, %{})
+        # Import the helpers for nested components
+        import SharedAssigns.Helpers, only: [sa_live_component: 1, sa_component: 2]
 
-        # Inject subscribed context values into assigns
-        context_assigns =
-          @shared_assigns_subscribed_contexts
-          |> Enum.reduce(%{}, fn context_key, acc ->
-            case Map.get(parent_contexts, context_key) do
-              nil -> acc
-              value -> Map.put(acc, context_key, value)
-            end
-          end)
-
-        # Merge all assigns together
-        socket =
-          socket
-          |> Phoenix.Component.assign(assigns)
-          |> Phoenix.Component.assign(context_assigns)
-
-        {:ok, socket}
-      end
-
-      defoverridable update: 2
-
-      @doc """
-      Returns the contexts this component subscribes to.
-      """
-      def subscribed_contexts do
-        @shared_assigns_subscribed_contexts
-      end
-
-      @doc """
-      Checks if this component should re-render based on context version changes.
-      """
-      def should_update_for_context?(context_key) do
-        context_key in @shared_assigns_subscribed_contexts
+        @doc """
+        Returns the list of contexts this component subscribes to.
+        """
+        def subscribed_contexts do
+          @shared_assigns_consumer_contexts
+        end
       end
     end
   end
 
-  @doc """
-  Helper function to get a context value from a LiveComponent socket.
-  Falls back to parent context if not found in socket assigns.
-  """
-  def get_context(socket_or_assigns, key, default \\ nil)
+  defmacro __before_compile__(env) do
+    # Check if the module already defines mount/3
+    has_mount = Module.defines?(env.module, {:mount, 3})
 
-  def get_context(%Phoenix.LiveView.Socket{assigns: assigns}, key, default) do
-    get_context(assigns, key, default)
+    if has_mount do
+      # If mount/3 exists, wrap it with PubSub subscription setup
+      quote do
+        defoverridable mount: 3
+
+        def mount(params, session, socket) do
+          result = super(params, session, socket)
+
+          case result do
+            {:ok, socket} ->
+              socket =
+                SharedAssigns.setup_pubsub_consumer(
+                  socket,
+                  @shared_assigns_pubsub,
+                  @shared_assigns_consumer_contexts,
+                  session
+                )
+
+              {:ok, socket}
+
+            other ->
+              other
+          end
+        end
+
+        def handle_info({:context_changed, key, value}, socket) do
+          {:noreply, assign(socket, key, value)}
+        end
+
+        @doc """
+        Returns the list of contexts this LiveView subscribes to.
+        """
+        def subscribed_contexts do
+          @shared_assigns_consumer_contexts
+        end
+      end
+    else
+      # If no mount/3 exists, create a default one
+      quote do
+        def mount(params, session, socket) do
+          socket =
+            SharedAssigns.setup_pubsub_consumer(
+              socket,
+              @shared_assigns_pubsub,
+              @shared_assigns_consumer_contexts,
+              session
+            )
+
+          {:ok, socket}
+        end
+
+        def handle_info({:context_changed, key, value}, socket) do
+          {:noreply, assign(socket, key, value)}
+        end
+
+        @doc """
+        Returns the list of contexts this LiveView subscribes to.
+        """
+        def subscribed_contexts do
+          @shared_assigns_consumer_contexts
+        end
+      end
+    end
   end
+end
 
-  def get_context(%{} = assigns, key, default) do
-    case Map.get(assigns, key) do
-      nil ->
-        # Fall back to parent contexts
-        parent_contexts = Map.get(assigns, :__parent_contexts__, %{})
-        Map.get(parent_contexts, key, default)
+defmodule SharedAssigns.Consumer.Component do
+  @moduledoc false
 
-      value ->
-        value
+  defmacro __before_compile__(env) do
+    # Check if the module already defines update/2
+    has_update = Module.defines?(env.module, {:update, 2})
+
+    unless has_update do
+      quote do
+        def update(assigns, socket) do
+          # Assign everything and let the contexts flow through
+          {:ok, Phoenix.Component.assign(socket, assigns)}
+        end
+      end
     end
   end
 end
