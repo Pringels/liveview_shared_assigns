@@ -3,7 +3,9 @@ defmodule DemoWeb.Components.CounterDisplayComponent do
   Simple component that displays counter with visual feedback.
   """
   use Phoenix.LiveComponent
-  use SharedAssigns.Consumer, contexts: [:counter, :theme]
+
+  # Declare which contexts this component subscribes to
+  def subscribed_contexts, do: [:counter, :theme]
 
   def update(assigns, socket) do
     IO.inspect(

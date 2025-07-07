@@ -7,6 +7,7 @@
               {modules,['Elixir.SharedAssigns',
                         'Elixir.SharedAssigns.Component',
                         'Elixir.SharedAssigns.Consumer',
+                        'Elixir.SharedAssigns.Consumer.Component',
                         'Elixir.SharedAssigns.Helpers',
                         'Elixir.SharedAssigns.Provider',
                         'Elixir.SharedAssigns.PubSubConsumer',

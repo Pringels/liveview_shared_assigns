@@ -6,6 +6,9 @@ defmodule DemoWeb.Components.NestedContainerComponent do
   use Phoenix.LiveComponent
   use SharedAssigns.Consumer, contexts: [:theme, :user, :counter]
 
+  # Import the helpers so we can use sa_live_component
+  import SharedAssigns.Helpers, only: [sa_live_component: 1]
+
   def render(assigns) do
     ~H"""
     <div class={[

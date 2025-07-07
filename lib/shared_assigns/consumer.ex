@@ -41,15 +41,11 @@ defmodule SharedAssigns.Consumer do
     else
       # This is a LiveComponent (default behavior)
       quote do
+        @before_compile SharedAssigns.Consumer.Component
         @shared_assigns_consumer_contexts unquote(contexts)
 
         # Import the helpers for nested components
         import SharedAssigns.Helpers, only: [sa_live_component: 1, sa_component: 2]
-
-        def update(assigns, socket) do
-          # Assign everything and let the contexts flow through
-          {:ok, Phoenix.Component.assign(socket, assigns)}
-        end
 
         @doc """
         Returns the list of contexts this component subscribes to.
@@ -125,6 +121,24 @@ defmodule SharedAssigns.Consumer do
         """
         def subscribed_contexts do
           @shared_assigns_consumer_contexts
+        end
+      end
+    end
+  end
+end
+
+defmodule SharedAssigns.Consumer.Component do
+  @moduledoc false
+
+  defmacro __before_compile__(env) do
+    # Check if the module already defines update/2
+    has_update = Module.defines?(env.module, {:update, 2})
+
+    unless has_update do
+      quote do
+        def update(assigns, socket) do
+          # Assign everything and let the contexts flow through
+          {:ok, Phoenix.Component.assign(socket, assigns)}
         end
       end
     end
