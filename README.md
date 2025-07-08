@@ -1,5 +1,10 @@
 # !!! WIP - DO NOT USE IN PRODUCTION !!! #
 
+
+![Gemini_Generated_Image_1pq9o41pq9o41pq9](https://github.com/user-attachments/assets/b843a628-e3a9-4b70-949f-6ecd8e2e257b)
+
+
+
 # SharedAssigns
 
 A React Context-like library for Phoenix LiveView that eliminates prop drilling by allowing components to subscribe to specific context values and automatically re-render when those contexts change.
@@ -9,7 +14,8 @@ A React Context-like library for Phoenix LiveView that eliminates prop drilling 
 - 🚀 **Zero boilerplate** - Declarative API with simple macros
 - ⚡ **Explicit assigns-based** - Pure explicit assigns, no process dictionary
 - 🔄 **Reactive components** - Automatic `send_update/3` when contexts change
-- 🎯 **Granular subscriptions** - Components subscribe only to needed contexts
+- 🎯 **Granular subscriptions** 
+- Components subscribe only to needed contexts
 - 📦 **Automatic context injection** - No manual prop drilling required
 - ✨ **Seamless integration** - Works naturally with Phoenix LiveView
 - 🧪 **Fully tested** - Comprehensive test suite included
