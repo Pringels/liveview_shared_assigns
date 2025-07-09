@@ -14,8 +14,7 @@ A React Context-like library for Phoenix LiveView that eliminates prop drilling 
 - 🚀 **Zero boilerplate** - Declarative API with simple macros
 - ⚡ **Explicit assigns-based** - Pure explicit assigns, no process dictionary
 - 🔄 **Reactive components** - Automatic `send_update/3` when contexts change
-- 🎯 **Granular subscriptions** 
-- Components subscribe only to needed contexts
+- 🎯 **Granular subscriptions** - Components subscribe only to needed contexts
 - 📦 **Automatic context injection** - No manual prop drilling required
 - ✨ **Seamless integration** - Works naturally with Phoenix LiveView
 - 🧪 **Fully tested** - Comprehensive test suite included
